@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Инструктажи | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Инструктажи</h1>
+    <button class="action-btn" onclick="location.href='{% url 'instruction_create' %}'">Провести инструктаж</button>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'instruction_list' %}">
+        <div class="filter-group">
+            <label for="department">Подразделение:</label>
+            <select name="department" id="department" class="form-control" onchange="this.form.submit()">
+                <option value="">Все подразделения</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if department_filter == dept.id|stringformat:"i" %}selected{% endif %}>{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="type">Тип инструктажа:</label>
+            <select name="type" id="type" class="form-control" onchange="this.form.submit()">
+                <option value="">Все типы</option>
+                {% for type in instruction_types %}
+                <option value="{{ type.id }}" {% if type_filter == type.id|stringformat:"i" %}selected{% endif %}>{{ type.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Тип инструктажа</th>
+                <th>Подразделение</th>
+                <th>Место проведения</th>
+                <th>Инструктор</th>
+                <th>Кол-во участников</th>
+                <th>Срок действия</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for instruction in page_obj %}
+            <tr>
+                <td>{{ instruction.instruction_date|date:"d.m.Y" }}</td>
+                <td>{{ instruction.instruction_type.name }}</td>
+                <td>{{ instruction.department.name }}</td>
+                <td>{{ instruction.location|default:"-" }}</td>
+                <td>{{ instruction.instructor.last_name }} {{ instruction.instructor.first_name }}</td>
+                <td>{{ instruction.participants_count }}</td>
+                <td>
+                    {% if instruction.next_instruction_date %}
+                    {{ instruction.next_instruction_date|date:"d.m.Y" }}
+                    {% if instruction.next_instruction_date < current_date %}
+                    <span class="status-badge status-urgent">Просрочен</span>
+                    {% endif %}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'instruction_detail' instruction.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'instruction_update' instruction.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                    <a href="{% url 'instruction_delete' instruction.id %}" class="icon-btn" title="Удалить"><span class="btn-icon">🗑️</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty-table">Инструктажи не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'partials/pagination.html' with page=page_obj %}
+
+<div class="section-title">Статистика инструктажей</div>
+
+<div class="dashboard-grid">
+    <div class="dashboard-card">
+        <div class="card-header">
+            <div class="card-icon">📅</div>
+            Инструктажи по месяцам
+        </div>
+        <div class="chart-container">
+            <canvas id="instructionsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="card-header">
+            <div class="card-icon">📊</div>
+            Инструктажи по типам
+        </div>
+        <div class="chart-container">
+            <canvas id="instructionTypesChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<style>
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Данные для графика инструктажей по месяцам
+        var instructionMonthsLabels = {{ instruction_months_labels|safe }};
+        var instructionMonthsCounts = {{ instruction_months_counts|safe }};
+
+        var ctx1 = document.getElementById('instructionsChart').getContext('2d');
+        var instructionsChart = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: instructionMonthsLabels,
+                datasets: [{
+                    label: 'Количество инструктажей',
+                    data: instructionMonthsCounts,
+                    backgroundColor: '#ff7a00'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+
+        // Данные для графика инструктажей по типам
+        var instructionTypesLabels = {{ instruction_types_labels|safe }};
+        var instructionTypesCounts = {{ instruction_types_counts|safe }};
+
+        var ctx2 = document.getElementById('instructionTypesChart').getContext('2d');
+        var instructionTypesChart = new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: instructionTypesLabels,
+                datasets: [{
+                    data: instructionTypesCounts,
+                    backgroundColor: [
+                        '#4caf50', '#ff9800', '#2196f3', '#f44336', '#9c27b0'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

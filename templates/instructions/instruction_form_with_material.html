@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h3>Основная информация</h3>
+            
+            <div class="form-group">
+                <label>Тип инструктажа</label>
+                {{ form.instruction_type }}
+            </div>
+            
+            <div class="form-group">
+                <label>Подразделение</label>
+                {{ form.department }}
+            </div>
+            
+            <div class="form-group">
+                <label>Дата проведения</label>
+                {{ form.instruction_date }}
+            </div>
+            
+            <div class="form-group">
+                <label>Дата следующего инструктажа</label>
+                {{ form.next_instruction_date }}
+            </div>
+            
+            <div class="form-group">
+                <label>Место проведения</label>
+                {{ form.location }}
+            </div>
+            
+            <div class="form-group">
+                <label>Продолжительность (мин)</label>
+                {{ form.duration }}
+            </div>
+            
+            <div class="form-group">
+                <label>Примечания</label>
+                {{ form.notes }}
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Участники</h3>
+            <div class="employee-select">
+                {% for employee in employees %}
+                <div class="employee-item">
+                    <input type="checkbox" name="participants" id="employee_{{ employee.id }}" value="{{ employee.id }}">
+                    <label for="employee_{{ employee.id }}">{{ employee }} ({{ employee.department }})</label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Добавление материалов и тестирования</h3>
+            <div class="form-check">
+                <input type="checkbox" name="has_materials" id="has_materials" class="form-check-input" checked>
+                <label for="has_materials" class="form-check-label">Добавить учебные материалы после создания</label>
+            </div>
+            <div class="form-text text-muted">
+                После создания инструктажа вы сможете добавить материалы для изучения и создать тестирование.
+            </div>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Создать инструктаж</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-section {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .form-section h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .employee-select {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+    }
+    
+    .employee-item {
+        margin-bottom: 5px;
+        padding: 5px;
+    }
+    
+    .employee-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .form-text {
+        margin-top: 5px;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}

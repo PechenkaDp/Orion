@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Материалы инструктажа | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Материалы инструктажа: {{ instruction.instruction_type.name }}</h1>
+    <div class="action-buttons">
+        <a href="{% url 'dashboard' %}" class="btn-secondary">На главную</a>
+    </div>
+</div>
+
+<div class="instruction-container">
+    <div class="instruction-info-block">
+        <div class="instruction-header">
+            <h2>{{ instruction.instruction_type.name }}</h2>
+            <div class="instruction-status">
+                <span class="status-badge 
+                    {% if participant.status == 'assigned' %}status-pending
+                    {% elif participant.status == 'completed' %}status-completed
+                    {% elif participant.status == 'failed' %}status-failed
+                    {% endif %}">
+                    {% if participant.status == 'assigned' %}Назначен
+                    {% elif participant.status == 'completed' %}Пройден
+                    {% elif participant.status == 'failed' %}Не пройден
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        
+        <div class="instruction-details">
+            <div class="detail-item">
+                <span class="detail-label">Подразделение:</span>
+                <span class="detail-value">{{ instruction.department.name }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Дата проведения:</span>
+                <span class="detail-value">{{ instruction.instruction_date|date:"d.m.Y H:i" }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Инструктор:</span>
+                <span class="detail-value">{{ instruction.instructor.last_name }} {{ instruction.instructor.first_name }}</span>
+            </div>
+            {% if instruction.location %}
+            <div class="detail-item">
+                <span class="detail-label">Место проведения:</span>
+                <span class="detail-value">{{ instruction.location }}</span>
+            </div>
+            {% endif %}
+            {% if instruction.notes %}
+            <div class="detail-item">
+                <span class="detail-label">Примечания:</span>
+                <span class="detail-value">{{ instruction.notes }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="materials-section">
+        <h2>Учебные материалы</h2>
+        
+        {% if materials %}
+        <div class="materials-list">
+            {% for material in materials %}
+            <div class="material-card">
+                <div class="material-icon">
+                    {% if material.file %}📄{% else %}📋{% endif %}
+                </div>
+                <div class="material-info">
+                    <h3>{{ material.title }}</h3>
+                    <p>{{ material.content|truncatechars:100 }}</p>
+                </div>
+                <div class="material-actions">
+                    <a href="{% url 'instruction_material_detail' material.id %}" class="action-btn">Изучить</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-materials">
+            <p>Для данного инструктажа не добавлены учебные материалы.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div id="test_section" class="test-section">
+        <h2>Тестирование</h2>
+        
+        {% if has_test %}
+        <div class="test-info">
+            <div class="test-details">
+                <h3>{{ test.title }}</h3>
+                {% if test.description %}
+                <p>{{ test.description }}</p>
+                {% endif %}
+                
+                <div class="test-parameters">
+                    <div class="parameter">
+                        <span class="parameter-label">Проходной балл:</span>
+                        <span class="parameter-value">{{ test.passing_score }}%</span>
+                    </div>
+                    
+                    {% if test.time_limit > 0 %}
+                    <div class="parameter">
+                        <span class="parameter-label">Ограничение времени:</span>
+                        <span class="parameter-value">{{ test.time_limit }} мин.</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="parameter">
+                        <span class="parameter-label">Количество вопросов:</span>
+                        <span class="parameter-value">{{ test.questions.count }}</span>
+                    </div>
+                </div>
+                
+                {% if test_result %}
+                <div class="test-result">
+                    <h4>Ваш результат</h4>
+                    <div class="result-info">
+                        <div class="result-score">
+                            <div class="score-circle {% if test_result.passed %}passed{% else %}failed{% endif %}">
+                                {{ test_result.score_percent|floatformat:0 }}%
+                            </div>
+                        </div>
+                        <div class="result-details">
+                            <p><strong>Статус:</strong> 
+                                {% if test_result.passed %}
+                                <span class="status-passed">Пройден</span>
+                                {% else %}
+                                <span class="status-failed">Не пройден</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Правильных ответов:</strong> {{ test_result.score }} из {{ test_result.max_score }}</p>
+                            <p><strong>Дата:</strong> {{ test_result.start_time|date:"d.m.Y H:i" }}</p>
+                            
+                            <div class="result-actions">
+                                <a href="{% url 'instruction_test_result' test_result.id %}" class="action-btn">Подробности</a>
+                                {% if not test_result.passed %}
+                                <a href="{% url 'instruction_take_test' test.id %}" class="action-btn">Пройти еще раз</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="test-actions">
+                    <a href="{% url 'instruction_take_test' test.id %}" class="action-btn">Пройти тест</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-test">
+            <p>Для данного инструктажа не предусмотрено тестирование.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .instruction-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .instruction-info-block {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .instruction-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .instruction-header h2 {
+        margin: 0;
+        color: #ff7a00;
+    }
+    
+    .instruction-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+    }
+    
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .detail-label {
+        font-weight: bold;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    
+    .materials-section, 
+    .test-section {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .materials-section h2,
+    .test-section h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .materials-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .material-card {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .material-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .material-icon {
+        font-size: 24px;
+        margin-bottom: 15px;
+        color: #ff7a00;
+    }
+    
+    .material-info {
+        flex: 1;
+        margin-bottom: 15px;
+    }
+    
+    .material-info h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+    
+    .material-info p {
+        color: #666;
+        margin: 0;
+    }
+    
+    .empty-materials,
+    .empty-test {
+        padding: 20px;
+        text-align: center;
+        color: #666;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+    }
+    
+    .test-info {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    
+    .test-details h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+    
+    .test-parameters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .parameter {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 10px 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .parameter-label {
+        font-weight: bold;
+        color: #666;
+        margin-right: 5px;
+    }
+    
+    .test-actions {
+        margin-top: 20px;
+    }
+    
+    .test-result {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+    
+    .test-result h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+    
+    .result-info {
+        display: flex;
+        align-items: center;
+    }
+    
+    .result-score {
+        margin-right: 20px;
+    }
+    
+    .score-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .score-circle.passed {
+        background-color: #4caf50;
+    }
+    
+    .score-circle.failed {
+        background-color: #f44336;
+    }
+    
+    .result-details {
+        flex: 1;
+    }
+    
+    .result-details p {
+        margin: 5px 0;
+    }
+    
+    .status-passed {
+        color: #4caf50;
+        font-weight: bold;
+    }
+    
+    .status-failed {
+        color: #f44336;
+        font-weight: bold;
+    }
+    
+    .result-actions {
+        margin-top: 15px;
+    }
+    
+    .status-completed {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+    
+    .status-pending {
+        background-color: #fff8e1;
+        color: #ff9800;
+    }
+    
+    .status-failed {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+    
+    @media (max-width: 768px) {
+        .materials-list {
+            grid-template-columns: 1fr;
+        }
+        
+        .instruction-details {
+            grid-template-columns: 1fr;
+        }
+        
+        .result-info {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .result-score {
+            margin-right: 0;
+            margin-bottom: 15px;
+        }
+    }
+</style>
+{% endblock %}

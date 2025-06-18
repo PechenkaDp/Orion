@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    <div class="action-buttons">
+        <button class="action-btn" onclick="window.print()">Печать</button>
+        <button class="action-btn">Экспорт в PDF</button>
+        <button class="action-btn">Экспорт в Excel</button>
+    </div>
+</div>
+
+<div class="report-header">
+    <div class="report-date">Отчет сформирован: {% now "d.m.Y H:i" %}</div>
+    <div class="report-date">Период: {% if date_from %}{{ date_from }}{% else %}--{% endif %} - {% if date_to %}{{ date_to }}{% else %}{% now "d.m.Y" %}{% endif %}</div>
+</div>
+
+<div class="report-content">
+    <div class="alert alert-info">
+        <p>Пользовательский отчет сформирован с параметрами:</p>
+        <ul>
+            <li>Тип отчета: {{ report_type }}</li>
+            <li>Период: с {% if date_from %}{{ date_from }}{% else %}не указано{% endif %} по {% if date_to %}{{ date_to }}{% else %}не указано{% endif %}</li>
+        </ul>
+    </div>
+    
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-header">
+                <div class="card-icon">📊</div>
+                Общая статистика
+            </div>
+            <div class="chart-container">
+                <canvas id="statsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-header">
+                <div class="card-icon">📝</div>
+                Результаты
+            </div>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Показатель 1</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Показатель 2</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Показатель 3</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section-title">Детализация</div>
+    
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Параметр</th>
+                    <th>Значение</th>
+                    <th>Комментарий</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Пример данных 1</td>
+                    <td>Значение 1</td>
+                    <td>Описание 1</td>
+                </tr>
+                <tr>
+                    <td>Пример данных 2</td>
+                    <td>Значение 2</td>
+                    <td>Описание 2</td>
+                </tr>
+                <tr>
+                    <td>Пример данных 3</td>
+                    <td>Значение 3</td>
+                    <td>Описание 3</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="report-actions">
+    <button class="action-btn" onclick="window.history.back()">Назад</button>
+    <button class="action-btn" onclick="window.print()">Печать</button>
+</div>
+
+<style>
+    .report-header {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+    
+    .report-date {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+    
+    .report-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 20px;
+    }
+    
+    .report-actions .action-btn {
+        margin-left: 10px;
+    }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Пример графика
+        var statsCtx = document.getElementById('statsChart').getContext('2d');
+        var statsChart = new Chart(statsCtx, {
+            type: 'line',
+            data: {
+                labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
+                datasets: [{
+                    label: 'Данные',
+                    data: [12, 19, 3, 5, 2, 3],
+                    backgroundColor: 'rgba(255, 122, 0, 0.2)',
+                    borderColor: '#ff7a00',
+                    borderWidth: 2,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

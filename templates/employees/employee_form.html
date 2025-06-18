@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h3>Данные пользователя</h3>
+            <div class="form-group">
+                <label>Имя пользователя (логин)</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Имя</label>
+                <input type="text" name="first_name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Фамилия</label>
+                <input type="text" name="last_name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" class="form-control">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Основная информация</h3>
+            <div class="form-group">
+                <label>Подразделение</label>
+                {{ form.department }}
+            </div>
+            <div class="form-group">
+                <label>Должность</label>
+                {{ form.position }}
+            </div>
+            <div class="form-group">
+                <label>Дата приема на работу</label>
+                {{ form.hire_date }}
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Медицинские осмотры</h3>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Дата последнего медосмотра</label>
+                    {{ form.medical_exam_date }}
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Дата следующего медосмотра</label>
+                    {{ form.next_medical_exam_date }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Дополнительная информация</h3>
+            <div class="form-group">
+                <label>Табельный номер</label>
+                {{ form.personal_id_number }}
+            </div>
+            <div class="form-group">
+                <label>Экстренный контакт</label>
+                {{ form.emergency_contact }}
+            </div>
+            <div class="form-group">
+                <label>Примечания</label>
+                {{ form.notes }}
+            </div>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

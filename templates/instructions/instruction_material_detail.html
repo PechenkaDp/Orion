@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ material.title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ material.title }}</h1>
+    <div class="action-buttons">
+        <a href="{% url 'instruction_study' instruction.id %}" class="btn-secondary">К списку материалов</a>
+    </div>
+</div>
+
+<div class="material-navigation">
+    {% if previous_material %}
+    <a href="{% url 'instruction_material_detail' previous_material.id %}" class="nav-link prev-link">
+        <span class="nav-icon">←</span> Предыдущий материал
+    </a>
+    {% else %}
+    <span class="nav-link disabled">
+        <span class="nav-icon">←</span> Предыдущий материал
+    </span>
+    {% endif %}
+    
+    <span class="material-position">
+        Материал {{ material.order }} из {{ materials|length }}
+    </span>
+    
+    {% if next_material %}
+    <a href="{% url 'instruction_material_detail' next_material.id %}" class="nav-link next-link">
+        Следующий материал <span class="nav-icon">→</span>
+    </a>
+    {% else %}
+    <a href="{% url 'instruction_study' instruction.id %}#test_section" class="nav-link test-link">
+        Перейти к тесту <span class="nav-icon">→</span>
+    </a>
+    {% endif %}
+</div>
+
+<div class="material-container">
+    <div class="material-content">
+        <div class="material-text">
+            {{ material.content|linebreaks }}
+        </div>
+        
+        {% if material.file %}
+        <div class="material-file">
+            <h3>Дополнительные материалы</h3>
+            <a href="{{ material.file.url }}" target="_blank" class="file-link">
+                <span class="file-icon">📎</span>
+                Скачать файл
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="material-sidebar">
+        <div class="sidebar-section">
+            <h3>Материалы инструктажа</h3>
+            <ul class="materials-list">
+                {% for mat in materials %}
+                <li class="{% if mat.id == material.id %}active{% endif %}">
+                    <a href="{% url 'instruction_material_detail' mat.id %}">
+                        <span class="material-number">{{ mat.order }}</span>
+                        <span class="material-title">{{ mat.title }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="sidebar-section">
+            <h3>Инструктаж</h3>
+            <div class="instruction-info">
+                <p><strong>Тип:</strong> {{ instruction.instruction_type.name }}</p>
+                <p><strong>Дата:</strong> {{ instruction.instruction_date|date:"d.m.Y" }}</p>
+                <p><strong>Инструктор:</strong> {{ instruction.instructor.last_name }} {{ instruction.instructor.first_name }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .material-navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 10px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .nav-link {
+        color: #ff7a00;
+        text-decoration: none;
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
+    
+    .nav-link:hover {
+        background-color: #fff8e1;
+    }
+    
+    .nav-link.disabled {
+        color: #ccc;
+        cursor: not-allowed;
+    }
+    
+    .nav-icon {
+        font-size: 18px;
+        vertical-align: middle;
+    }
+    
+    .material-position {
+        color: #666;
+    }
+    
+    .material-container {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .material-content {
+        flex: 3;
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .material-text {
+        line-height: 1.6;
+        font-size: 16px;
+    }
+    
+    .material-text h1, 
+    .material-text h2, 
+    .material-text h3 {
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+    }
+    
+    .material-text p {
+        margin-bottom: 1em;
+    }
+    
+    .material-file {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+    
+    .file-link {
+        display: inline-flex;
+        align-items: center;
+        background-color: #f5f5f5;
+        padding: 10px 15px;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #333;
+        transition: background-color 0.2s;
+    }
+    
+    .file-link:hover {
+        background-color: #ebebeb;
+    }
+    
+    .file-icon {
+        margin-right: 10px;
+        font-size: 20px;
+    }
+    
+    .material-sidebar {
+        flex: 1;
+    }
+    
+    .sidebar-section {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .sidebar-section h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .materials-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .materials-list li {
+        margin-bottom: 8px;
+    }
+    
+    .materials-list li a {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: #333;
+        padding: 8px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
+    
+    .materials-list li a:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .materials-list li.active a {
+        background-color: #fff8e1;
+        font-weight: bold;
+        color: #ff7a00;
+    }
+    
+    .material-number {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 24px;
+        height: 24px;
+        background-color: #f0f0f0;
+        border-radius: 50%;
+        margin-right: 10px;
+        font-size: 12px;
+    }
+    
+    .materials-list li.active .material-number {
+        background-color: #ff7a00;
+        color: white;
+    }
+    
+    .instruction-info p {
+        margin: 5px 0;
+    }
+    
+    @media (max-width: 768px) {
+        .material-container {
+            flex-direction: column;
+        }
+        
+        .material-content {
+            order: 1;
+        }
+        
+        .material-sidebar {
+            order: 2;
+        }
+    }
+</style>
+{% endblock %}

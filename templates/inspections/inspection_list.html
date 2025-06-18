@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Проверки | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Проверки</h1>
+    <button class="action-btn" onclick="location.href='{% url 'inspection_create' %}'">Создать проверку</button>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'inspection_list' %}">
+        <div class="filter-group">
+            <label for="status">Статус:</label>
+            <select name="status" id="status" class="form-control" onchange="this.form.submit()">
+                <option value="">Все статусы</option>
+                <option value="new" {% if status_filter == 'new' %}selected{% endif %}>Новая</option>
+                <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>В процессе</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Завершена</option>
+                <option value="canceled" {% if status_filter == 'canceled' %}selected{% endif %}>Отменена</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Тип проверки</th>
+                <th>Подразделение</th>
+                <th>Период</th>
+                <th>Проверяющий</th>
+                <th>Статус</th>
+                <th>Нарушения</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inspection in page_obj %}
+            <tr>
+                <td>{{ inspection.title }}</td>
+                <td>{{ inspection.inspection_type }}</td>
+                <td>{{ inspection.department.name }}</td>
+                <td>
+                    {{ inspection.start_date|date:"d.m.Y" }}
+                    {% if inspection.end_date %}- {{ inspection.end_date|date:"d.m.Y" }}{% endif %}
+                </td>
+                <td>{{ inspection.lead_inspector.last_name }} {{ inspection.lead_inspector.first_name }}</td>
+                <td>
+                    <span class="status-badge {% if inspection.status == 'new' %}status-pending{% elif inspection.status == 'in_progress' %}status-pending{% elif inspection.status == 'completed' %}status-completed{% elif inspection.status == 'canceled' %}status-urgent{% endif %}">
+                        {% if inspection.status == 'new' %}Новая{% elif inspection.status == 'in_progress' %}В процессе{% elif inspection.status == 'completed' %}Завершена{% elif inspection.status == 'canceled' %}Отменена{% endif %}
+                    </span>
+                </td>
+                <td>
+                    {% if inspection.findings_count %}
+                    {{ inspection.findings_count }}
+                    <span class="status-badge {% if inspection.overdue_findings_count %}status-urgent{% elif inspection.findings_count == inspection.resolved_findings_count %}status-completed{% else %}status-pending{% endif %}">
+                        {{ inspection.resolved_findings_count }}/{{ inspection.findings_count }}
+                    </span>
+            {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'inspection_detail' inspection.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'inspection_update' inspection.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                    <a href="{% url 'inspection_delete' inspection.id %}" class="icon-btn" title="Удалить"><span class="btn-icon">🗑️</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty-table">Проверки не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'partials/pagination.html' with page=page_obj %}
+{% endblock %}

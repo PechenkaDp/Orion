@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Проверка результатов теста | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Проверка результатов теста</h1>
+    <div class="action-buttons">
+        <a href="{% url 'instruction_test_results_list' %}" class="btn-secondary">К списку результатов</a>
+    </div>
+</div>
+
+<div class="review-container">
+    <div class="result-info-section">
+        <div class="result-header">
+            <h2>{{ test.title }}</h2>
+            <div class="result-score-block {% if test_result.passed %}passed{% else %}failed{% endif %}">
+                <div class="score-circle">
+                    {{ test_result.score_percent|floatformat:0 }}%
+                </div>
+                <div class="score-label">
+                    {% if test_result.passed %}
+                    ПРОЙДЕНО
+                    {% else %}
+                    НЕ ПРОЙДЕНО
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="result-details">
+            <div class="detail-item">
+                <span class="detail-label">Дата:</span>
+                <span class="detail-value">{{ test_result.start_time|date:"d.m.Y H:i" }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Сотрудник:</span>
+                <span class="detail-value">{{ test_result.employee.user.last_name }} {{ test_result.employee.user.first_name }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Результат:</span>
+                <span class="detail-value">{{ test_result.score }} из {{ test_result.max_score }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Проходной балл:</span>
+                <span class="detail-value">{{ test.passing_score }}%</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Инструктаж:</span>
+                <span class="detail-value">{{ instruction.instruction_type.name }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="reviewer-section">
+        <h3>Проверка результата</h3>
+        <p class="review-description">Вы можете изменить статус прохождения теста и добавить комментарий.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Статус:</label>
+                <div class="form-check">
+                    <input type="checkbox" name="passed" id="passed" class="form-check-input" 
+                           {% if test_result.passed %}checked{% endif %}>
+                    <label for="passed" class="form-check-label">Тест пройден</label>
+                </div>
+                <div class="form-text text-muted">
+                    Изменить статус прохождения теста. По умолчанию статус определяется автоматически на основе процента правильных ответов.
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Примечания:</label>
+                <textarea name="reviewer_notes" class="form-control" rows="4">{{ test_result.reviewer_notes }}</textarea>
+                <div class="form-text text-muted">
+                    Добавьте комментарий или причину изменения статуса. Этот комментарий будет виден сотруднику.
+                </div>
+            </div>
+            
+            <div class="form-buttons">
+                <button type="submit" class="action-btn btn-primary">Сохранить результат проверки</button>
+                <a href="{% url 'instruction_test_results_list' %}" class="btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="answers-section">
+        <h3>Ответы сотрудника</h3>
+        
+        <div class="answers-list">
+            {% for submission in submissions %}
+            <div class="answer-item">
+                <div class="question-block">
+                    <div class="question-number">Вопрос {{ forloop.counter }}</div>
+                    <div class="question-text">{{ submission.question.question_text }}</div>
+                </div>
+                
+                <div class="answer-block {% if submission.is_correct %}answer-correct{% else %}answer-wrong{% endif %}">
+                    <div class="selected-answer">
+                        <div class="answer-status">
+                            {% if submission.is_correct %}
+                            <span class="status-icon correct">✓</span>
+                            {% else %}
+                            <span class="status-icon wrong">✗</span>
+                            {% endif %}
+                        </div>
+                        <div class="answer-text">
+                            {{ submission.answer.answer_text }}
+                        </div>
+                    </div>
+                    
+                    {% if not submission.is_correct %}
+                    <div class="correct-answer">
+                        <div class="correct-label">Правильный ответ:</div>
+                        <div class="correct-text">
+                            {% for answer in submission.question.answers.all %}
+                            {% if answer.is_correct %}
+                            {{ answer.answer_text }}
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .review-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .result-info-section {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .result-header h2 {
+        margin: 0;
+        color: #ff7a00;
+    }
+    
+    .result-score-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .score-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .passed .score-circle {
+        background-color: #4caf50;
+    }
+    
+    .failed .score-circle {
+        background-color: #f44336;
+    }
+    
+    .score-label {
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+    .passed .score-label {
+        color: #4caf50;
+    }
+    
+    .failed .score-label {
+        color: #f44336;
+    }
+    
+    .result-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+    }
+    
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .detail-label {
+        font-weight: bold;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    
+    .reviewer-section {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .reviewer-section h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #ff7a00;
+    }
+    
+    .review-description {
+        margin-bottom: 20px;
+        color: #666;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+    }
+    
+    .form-check {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .form-check-input {
+        margin-right: 10px;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+    
+    .form-text {
+        font-size: 14px;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .form-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+    
+    .btn-primary {
+        background-color: #ff7a00;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #e66d00;
+    }
+    
+    .answers-section {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .answers-section h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #ff7a00;
+    }
+    
+    .answers-list {
+        margin-top: 20px;
+    }
+    
+    .answer-item {
+        margin-bottom: 20px;
+        border-left: 4px solid #f0f0f0;
+        padding-left: 15px;
+    }
+    
+    .question-block {
+        margin-bottom: 10px;
+    }
+    
+    .question-number {
+        font-weight: bold;
+        color: #ff7a00;
+        margin-bottom: 5px;
+    }
+    
+    .question-text {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+    
+    .answer-block {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    
+    .answer-correct {
+        border-left: 4px solid #4caf50;
+    }
+    
+    .answer-wrong {
+        border-left: 4px solid #f44336;
+    }
+    
+    .selected-answer {
+        display: flex;
+        margin-bottom: 10px;
+    }
+    
+    .answer-status {
+        margin-right: 10px;
+    }
+    
+    .status-icon {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 24px;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .status-icon.correct {
+        background-color: #4caf50;
+    }
+    
+    .status-icon.wrong {
+        background-color: #f44336;
+    }
+    
+    .correct-answer {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed #ddd;
+    }
+    
+    .correct-label {
+        font-weight: bold;
+        color: #4caf50;
+        margin-bottom: 5px;
+    }
+    
+    @media (max-width: 768px) {
+        .result-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .result-score-block {
+            margin-top: 15px;
+        }
+        
+        .result-details {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

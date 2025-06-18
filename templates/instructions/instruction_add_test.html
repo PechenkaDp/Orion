@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Создание теста для инструктажа | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Создание теста для инструктажа</h1>
+    <div class="action-buttons">
+        <a href="{% url 'instruction_detail' instruction.id %}" class="btn-secondary">Вернуться к инструктажу</a>
+    </div>
+</div>
+
+<div class="instruction-info">
+    <h2>{{ instruction.instruction_type.name }}</h2>
+    <p><strong>Подразделение:</strong> {{ instruction.department.name }}</p>
+    <p><strong>Дата проведения:</strong> {{ instruction.instruction_date|date:"d.m.Y H:i" }}</p>
+</div>
+
+<div class="section-title">Настройки теста</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Название теста</label>
+            {{ form.title }}
+        </div>
+        
+        <div class="form-group">
+            <label>Описание</label>
+            {{ form.description }}
+            <div class="form-text text-muted">
+                Добавьте краткое описание теста для участников.
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label>Проходной балл (%)</label>
+                {{ form.passing_score }}
+                <div class="form-text text-muted">
+                    Укажите процент правильных ответов для успешного прохождения теста.
+                </div>
+            </div>
+            
+            <div class="form-group col-md-6">
+                <label>Ограничение времени (мин)</label>
+                {{ form.time_limit }}
+                <div class="form-text text-muted">
+                    Укажите время на прохождение теста в минутах. 0 - без ограничений.
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-check">
+            <label class="form-check-label">
+                {{ form.is_active }}
+                Тест активен
+            </label>
+            <div class="form-text text-muted">
+                Если не отмечено, участники не смогут проходить тест.
+            </div>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Создать тест и добавить вопросы</button>
+            <a href="{% url 'instruction_detail' instruction.id %}" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .instruction-info {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .instruction-info h2 {
+        margin-top: 0;
+        color: #ff7a00;
+    }
+    
+    .form-row {
+        display: flex;
+        margin-right: -10px;
+        margin-left: -10px;
+    }
+    
+    .form-row > .col,
+    .form-row > [class*="col-"] {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+    
+    .col-md-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+    
+    .form-check {
+        margin-bottom: 20px;
+    }
+    
+    .form-check-label {
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}

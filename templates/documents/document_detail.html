@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Документ: {{ document.title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ document.title }}</h1>
+    <div class="action-buttons">
+        {% if user.employee.role in 'admin,safety_specialist,department_head' %}
+        <a href="{% url 'document_update' document.id %}" class="action-btn">Редактировать</a>
+        <a href="{% url 'document_delete' document.id %}" class="action-btn btn-danger">Удалить</a>
+        {% endif %}
+        {% if document.file %}
+        <a href="{{ document.file.url }}" target="_blank" class="action-btn">Скачать</a>
+        {% endif %}
+        <a href="{% url 'document_list' %}" class="btn-secondary">Назад к списку</a>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Информация о документе</h2>
+            <span class="status-badge {% if document.is_active %}status-completed{% else %}status-urgent{% endif %}">
+                {% if document.is_active %}Активен{% else %}Неактивен{% endif %}
+            </span>
+        </div>
+        
+        <div class="detail-content">
+            <div class="detail-row">
+                <div class="detail-label">Название:</div>
+                <div class="detail-value">{{ document.title }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Тип документа:</div>
+                <div class="detail-value">{{ document.document_type }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата публикации:</div>
+                <div class="detail-value">{{ document.publish_date|date:"d.m.Y"|default:"Не указана" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата вступления в силу:</div>
+                <div class="detail-value">{{ document.effective_date|date:"d.m.Y"|default:"Не указана" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата окончания срока действия:</div>
+                <div class="detail-value {% if document.expiry_date and document.expiry_date < current_date %}overdue{% endif %}">
+                    {{ document.expiry_date|date:"d.m.Y"|default:"Бессрочно" }}
+                    {% if document.expiry_date and document.expiry_date < current_date %}
+                    <span class="status-badge status-urgent">Просрочен</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Версия:</div>
+                <div class="detail-value">{{ document.version|default:"Не указана" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Автор:</div>
+                <div class="detail-value">{{ document.author|default:"Не указан" }}</div>
+            </div>
+            {% if document.description %}
+            <div class="detail-row">
+                <div class="detail-label">Описание:</div>
+                <div class="detail-value">{{ document.description }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if document.file %}
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Документ</h2>
+        </div>
+        <div class="detail-content">
+            <div class="document-preview">
+                {% with file_url=document.file.url|lower %}
+                    {% if ".pdf" in file_url %}
+                        <iframe src="{{ document.file.url }}" width="100%" height="600px" frameborder="0">
+                            <p>Ваш браузер не поддерживает отображение PDF файлов. 
+                            <a href="{{ document.file.url }}" target="_blank">Скачать файл</a></p>
+                        </iframe>
+                    {% elif ".jpg" in file_url or ".jpeg" in file_url or ".png" in file_url or ".gif" in file_url or ".bmp" in file_url or ".webp" in file_url %}
+                        <div class="image-preview">
+                            <img src="{{ document.file.url }}" alt="{{ document.title }}" style="max-width: 100%; height: auto; border-radius: 4px;">
+                        </div>
+                    {% elif ".docx" in file_url or ".doc" in file_url %}
+                        <div class="file-info">
+                            <div class="file-icon">📄</div>
+                            <div class="file-details">
+                                <h3>{{ document.file.name|default:"Документ" }}</h3>
+                                <p>Тип файла: Word документ</p>
+                                <p class="file-description">Для просмотра документа скачайте его на свой компьютер.</p>
+                                <a href="{{ document.file.url }}" target="_blank" class="action-btn">Скачать файл</a>
+                            </div>
+                        </div>
+                    {% elif ".xlsx" in file_url or ".xls" in file_url %}
+                        <div class="file-info">
+                            <div class="file-icon">📊</div>
+                            <div class="file-details">
+                                <h3>{{ document.file.name|default:"Документ" }}</h3>
+                                <p>Тип файла: Excel таблица</p>
+                                <p class="file-description">Для просмотра таблицы скачайте её на свой компьютер.</p>
+                                <a href="{{ document.file.url }}" target="_blank" class="action-btn">Скачать файл</a>
+                            </div>
+                        </div>
+                    {% elif ".pptx" in file_url or ".ppt" in file_url %}
+                        <div class="file-info">
+                            <div class="file-icon">📊</div>
+                            <div class="file-details">
+                                <h3>{{ document.file.name|default:"Документ" }}</h3>
+                                <p>Тип файла: PowerPoint презентация</p>
+                                <p class="file-description">Для просмотра презентации скачайте её на свой компьютер.</p>
+                                <a href="{{ document.file.url }}" target="_blank" class="action-btn">Скачать файл</a>
+                            </div>
+                        </div>
+                    {% elif ".txt" in file_url %}
+                        <div class="text-preview">
+                            <div class="file-icon">📝</div>
+                            <div class="file-details">
+                                <h3>{{ document.file.name|default:"Текстовый файл" }}</h3>
+                                <p>Тип файла: Текстовый документ</p>
+                                <a href="{{ document.file.url }}" target="_blank" class="action-btn">Открыть файл</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="file-info">
+                            <div class="file-icon">📄</div>
+                            <div class="file-details">
+                                <h3>{{ document.file.name|default:"Файл документа" }}</h3>
+                                {% with file_parts=document.file.url|filesizeformat %}
+                                    <p>Размер: {{ file_parts }}</p>
+                                {% endwith %}
+                                <p class="file-description">Неизвестный тип файла. Скачайте для просмотра.</p>
+                                <a href="{{ document.file.url }}" target="_blank" class="action-btn">Скачать файл</a>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.page-header h1 {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.detail-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.detail-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.detail-header {
+    background-color: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.detail-content {
+    padding: 20px;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 15px;
+    align-items: flex-start;
+}
+
+.detail-row:last-child {
+    margin-bottom: 0;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #555;
+    min-width: 220px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    color: #333;
+    flex: 1;
+}
+
+.overdue {
+    color: #f44336;
+    font-weight: bold;
+}
+
+.document-preview {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: #fafafa;
+}
+
+.file-info, .text-preview {
+    display: flex;
+    align-items: center;
+    padding: 30px;
+    background-color: #f9f9f9;
+    min-height: 120px;
+}
+
+.file-icon {
+    font-size: 48px;
+    margin-right: 20px;
+    color: #555;
+    flex-shrink: 0;
+}
+
+.file-details {
+    flex: 1;
+}
+
+.file-details h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.file-details p {
+    margin: 0 0 10px 0;
+    color: #666;
+}
+
+.file-details p:last-of-type {
+    margin-bottom: 15px;
+}
+
+.file-description {
+    font-style: italic;
+    color: #888;
+}
+
+.image-preview {
+    padding: 15px;
+    text-align: center;
+    background-color: white;
+}
+
+.image-preview img {
+    max-height: 600px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .action-buttons {
+        justify-content: flex-start;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .detail-label {
+        min-width: auto;
+        font-weight: 600;
+    }
+    
+    .file-info, .text-preview {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .file-icon {
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+}
+
+/* Стили для кнопок */
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+</style>
+{% endblock %}

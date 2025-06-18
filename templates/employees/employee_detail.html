@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Сотрудник: {{ employee.user.last_name }} {{ employee.user.first_name }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Сотрудник: {{ employee.user.last_name }} {{ employee.user.first_name }}</h1>
+    <div class="action-buttons">
+        <a href="{% url 'employee_update' employee.id %}" class="action-btn">Редактировать</a>
+        <a href="{% url 'employee_delete' employee.id %}" class="action-btn btn-danger">Удалить</a>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card employee-profile">
+        <div class="detail-header">
+            <h2>Информация о сотруднике</h2>
+            <span class="status-badge {% if employee.user.is_active %}status-active{% else %}status-inactive{% endif %}">
+                {% if employee.user.is_active %}Активен{% else %}Неактивен{% endif %}
+            </span>
+        </div>
+
+        <div class="detail-content">
+            <div class="employee-avatar">
+                <div class="avatar-placeholder">
+                    <span>{{ employee.user.first_name|first }}{{ employee.user.last_name|first }}</span>
+                </div>
+            </div>
+
+            <div class="employee-info">
+                <div class="detail-row">
+                    <div class="detail-label">ФИО:</div>
+                    <div class="detail-value">{{ employee.user.last_name }} {{ employee.user.first_name }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Должность:</div>
+                    <div class="detail-value">{{ employee.position }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Подразделение:</div>
+                    <div class="detail-value">{{ employee.department.name }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Дата приема:</div>
+                    <div class="detail-value">{{ employee.hire_date|date:"d.m.Y" }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Табельный номер:</div>
+                    <div class="detail-value">{{ employee.personal_id_number|default:"Не указан" }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Email:</div>
+                    <div class="detail-value">{{ employee.user.email }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Экстренный контакт:</div>
+                    <div class="detail-value">{{ employee.emergency_contact|default:"Не указан" }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Последний медосмотр:</div>
+                    <div class="detail-value">{{ employee.medical_exam_date|date:"d.m.Y"|default:"Не указан" }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Следующий медосмотр:</div>
+                    <div class="detail-value {% if employee.next_medical_exam_date and employee.next_medical_exam_date < current_date %}overdue{% endif %}">
+                        {{ employee.next_medical_exam_date|date:"d.m.Y"|default:"Не указан" }}
+                        {% if employee.next_medical_exam_date and employee.next_medical_exam_date < current_date %}
+                        <span class="status-badge status-urgent">Просрочен</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if employee.notes %}
+                <div class="detail-row">
+                    <div class="detail-label">Примечания:</div>
+                    <div class="detail-value">{{ employee.notes }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>История инструктажей</h2>
+            <a href="{% url 'instruction_create' %}?employee={{ employee.id }}" class="action-btn">Провести инструктаж</a>
+        </div>
+        <div class="detail-content">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Тип инструктажа</th>
+                        <th>Инструктор</th>
+                        <th>Результат</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for participation in instruction_history %}
+                    <tr>
+                        <td>{{ participation.instruction.instruction_date|date:"d.m.Y" }}</td>
+                        <td>{{ participation.instruction.instruction_type.name }}</td>
+                        <td>{{ participation.instruction.instructor.last_name }} {{ participation.instruction.instructor.first_name }}</td>
+                        <td>{% if participation.test_result %}{{ participation.test_result }}{% else %}Присутствовал{% endif %}</td>
+                        <td>
+                            <a href="{% url 'instruction_detail' participation.instruction.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-table">История инструктажей отсутствует</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Выданные СИЗ</h2>
+            <a href="{% url 'ppe_issue_employee' employee.id %}" class="action-btn">Выдать СИЗ</a>
+        </div>
+        <div class="detail-content">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Дата выдачи</th>
+                        <th>СИЗ</th>
+                        <th>Количество</th>
+                        <th>Выдал</th>
+                        <th>Срок возврата</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in ppe_history %}
+                    <tr>
+                        <td>{{ issue.issue_date|date:"d.m.Y" }}</td>
+                        <td>{{ issue.ppe_item.name }}</td>
+                        <td>{{ issue.quantity }}</td>
+                        <td>{{ issue.issued_by.last_name }} {{ issue.issued_by.first_name }}</td>
+                        <td>{{ issue.expected_return_date|date:"d.m.Y"|default:"Бессрочно" }}</td>
+                        <td>
+                            <span class="status-badge {% if not issue.actual_return_date and issue.expected_return_date and issue.expected_return_date < current_date %}status-urgent{% elif not issue.actual_return_date %}status-pending{% else %}status-completed{% endif %}">
+                                {% if not issue.actual_return_date and issue.expected_return_date and issue.expected_return_date < current_date %}Просрочено{% elif not issue.actual_return_date %}В использовании{% else %}Возвращено{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty-table">История выдачи СИЗ отсутствует</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Медицинские осмотры</h2>
+            <a href="{% url 'medical_exam_create' employee.id %}" class="action-btn">Добавить медосмотр</a>
+        </div>
+        <div class="detail-content">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Тип</th>
+                        <th>Медучреждение</th>
+                        <th>Результат</th>
+                        <th>Следующий осмотр</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in medical_exams %}
+                    <tr>
+                        <td>{{ exam.exam_date|date:"d.m.Y" }}</td>
+                        <td>{{ exam.exam_type }}</td>
+                        <td>{{ exam.medical_facility }}</td>
+                        <td>{{ exam.result }}</td>
+                        <td>{{ exam.next_exam_date|date:"d.m.Y" }}</td>
+                        <td>
+                            <a href="{% url 'medical_exam_detail' exam.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                            <a href="{% url 'medical_exam_update' exam.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty-table">История медосмотров отсутствует</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .employee-profile .detail-content {
+        display: flex;
+        gap: 20px;
+    }
+
+    .employee-avatar {
+        flex: 0 0 150px;
+    }
+
+    .avatar-placeholder {
+        width: 150px;
+        height: 150px;
+        background-color: #ff7a00;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        font-weight: bold;
+    }
+
+    .employee-info {
+        flex: 1;
+    }
+
+    .status-active {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+
+    .status-inactive {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+
+    .overdue {
+        color: #f44336;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}

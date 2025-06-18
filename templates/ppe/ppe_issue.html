@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Выдача СИЗ | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Выдача СИЗ по заявке #{{ ppe_request.id }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Сотрудник</label>
+            <input type="text" class="form-control" value="{{ ppe_request.employee }}" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label>СИЗ</label>
+            <input type="text" class="form-control" value="{{ ppe_request.ppe_item.name }}" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label>Количество</label>
+            <input type="number" name="quantity" class="form-control" value="{{ ppe_request.quantity }}" min="1">
+        </div>
+        
+        <div class="form-group">
+            <label>Ожидаемая дата возврата</label>
+            <input type="datetime-local" name="expected_return_date" class="form-control">
+        </div>
+        
+        <div class="form-group">
+            <label>Примечания</label>
+            <textarea name="notes" class="form-control" rows="3"></textarea>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Выдать СИЗ</button>
+            <a href="{% url 'ppe_detail' ppe_request.id %}" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

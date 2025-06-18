@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Риск #{{ risk.id }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Риск #{{ risk.id }} - {{ risk.hazard.name }}</h1>
+    <div class="action-buttons">
+        <a href="{% url 'risk_update' risk.id %}" class="action-btn">Редактировать</a>
+        <a href="{% url 'risk_delete' risk.id %}" class="action-btn btn-danger">Удалить</a>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Информация о риске</h2>
+            <span class="status-badge {% if risk.level == 'low' %}status-low{% elif risk.level == 'medium' %}status-medium{% elif risk.level == 'high' %}status-high{% elif risk.level == 'critical' %}status-critical{% endif %}">
+                {% if risk.level == 'low' %}Низкий{% elif risk.level == 'medium' %}Средний{% elif risk.level == 'high' %}Высокий{% elif risk.level == 'critical' %}Критический{% endif %}
+            </span>
+        </div>
+        
+        <div class="detail-content">
+            <div class="detail-row">
+                <div class="detail-label">Опасность:</div>
+                <div class="detail-value">{{ risk.hazard.name }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Категория:</div>
+                <div class="detail-value">{{ risk.hazard.category }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Подразделение:</div>
+                <div class="detail-value">{{ risk.department.name }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Местоположение:</div>
+                <div class="detail-value">{{ risk.location }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Вероятность:</div>
+                <div class="detail-value">{{ risk.probability }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Тяжесть последствий:</div>
+                <div class="detail-value">{{ risk.severity }} из 10</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Оценка риска:</div>
+                <div class="detail-value"><strong>{{ risk.risk_score }}</strong></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата оценки:</div>
+                <div class="detail-value">{{ risk.evaluation_date|date:"d.m.Y" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Оценил:</div>
+                <div class="detail-value">{{ risk.evaluated_by }}</div>
+            </div>
+            {% if risk.description %}
+            <div class="detail-row">
+                <div class="detail-label">Описание:</div>
+                <div class="detail-value">{{ risk.description }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Мероприятия по снижению риска</h2>
+            <a href="{% url 'risk_mitigation_add' risk.id %}" class="action-btn">Добавить мероприятие</a>
+        </div>
+        <div class="detail-content">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Описание</th>
+                        <th>Ответственный</th>
+                        <th>Срок</th>
+                        <th>Статус</th>
+                        <th>Эффективность</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for measure in mitigation_measures %}
+                    <tr>
+                        <td>{{ measure.description }}</td>
+                        <td>{{ measure.responsible_person }}</td>
+                        <td>{{ measure.deadline|date:"d.m.Y" }}</td>
+                        <td>
+                            <span class="status-badge {% if measure.status == 'new' %}status-pending{% elif measure.status == 'in_progress' %}status-pending{% elif measure.status == 'completed' %}status-completed{% elif measure.status == 'canceled' %}status-urgent{% endif %}">
+                                {% if measure.status == 'new' %}Новая{% elif measure.status == 'in_progress' %}В работе{% elif measure.status == 'completed' %}Выполнено{% elif measure.status == 'canceled' %}Отменено{% endif %}
+                            </span>
+                        </td>
+                        <td>{% if measure.effectiveness_rating %}{{ measure.effectiveness_rating }} из 10{% else %}Не оценена{% endif %}</td>
+                        <td>
+                            <a href="{% url 'risk_mitigation_update' measure.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                            <a href="{% url 'risk_mitigation_delete' measure.id %}" class="icon-btn" title="Удалить"><span class="btn-icon">🗑️</span></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty-table">Мероприятия не найдены</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Оценка риска</h2>
+        </div>
+        <div class="detail-content risk-matrix">
+            <div class="risk-matrix-container">
+                <table class="risk-matrix-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th colspan="5">Тяжесть последствий</th>
+                        </tr>
+                        <tr>
+                            <th>Вероятность</th>
+                            <th>Незначительная (1-2)</th>
+                            <th>Низкая (3-4)</th>
+                            <th>Средняя (5-6)</th>
+                            <th>Высокая (7-8)</th>
+                            <th>Критическая (9-10)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Очень высокая (0.8-1.0)</td>
+                            <td class="risk-low">Низкий</td>
+                            <td class="risk-medium">Средний</td>
+                            <td class="risk-high">Высокий</td>
+                            <td class="risk-critical">Критический</td>
+                            <td class="risk-critical">Критический</td>
+                        </tr>
+                        <tr>
+                            <td>Высокая (0.6-0.8)</td>
+                            <td class="risk-low">Низкий</td>
+                            <td class="risk-medium">Средний</td>
+                            <td class="risk-high">Высокий</td>
+                            <td class="risk-high">Высокий</td>
+                            <td class="risk-critical">Критический</td>
+                        </tr>
+                        <tr>
+                            <td>Средняя (0.4-0.6)</td>
+                            <td class="risk-low">Низкий</td>
+                            <td class="risk-medium">Средний</td>
+                            <td class="risk-medium">Средний</td>
+                            <td class="risk-high">Высокий</td>
+                            <td class="risk-high">Высокий</td>
+                        </tr>
+                        <tr>
+                            <td>Низкая (0.2-0.4)</td>
+                            <td class="risk-low">Низкий</td>
+                            <td class="risk-low">Низкий</td>
+                            <td class="risk-medium">Средний</td>
+                            <td class="risk-medium">Средний</td>
+                            <td class="risk-high">Высокий</td>
+                        </tr>
+                        <tr>
+                            <td>Очень низкая (0.0-0.2)</td>
+                            <td class="risk-low">Низкий</td>
+                            <td class="risk-low">Низкий</td>
+                            <td class="risk-low">Низкий</td>
+                            <td class="risk-medium">Средний</td>
+                            <td class="risk-medium">Средний</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="current-risk-marker" id="riskMarker" style="top: {{ risk_marker_top }}px; left: {{ risk_marker_left }}px;" title="Текущий риск">
+                    <span class="marker-icon">📍</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .status-low {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+    .status-medium {
+        background-color: #fff5e6;
+        color: #ff9800;
+    }
+    .status-high {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+    .status-critical {
+        background-color: #9c0006;
+        color: white;
+    }
+    
+    .risk-matrix-container {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .risk-matrix-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .risk-matrix-table th, 
+    .risk-matrix-table td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+    }
+    
+    .risk-low {
+        background-color: #e6f7e6;
+    }
+    
+    .risk-medium {
+        background-color: #fff5e6;
+    }
+    
+    .risk-high {
+        background-color: #ffe6e6;
+    }
+    
+    .risk-critical {
+        background-color: #9c0006;
+        color: white;
+    }
+    
+    .current-risk-marker {
+        position: absolute;
+        font-size: 24px;
+        color: red;
+        z-index: 10;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const probability = {{ risk.probability }};
+        const severity = {{ risk.severity }};
+
+        const table = document.querySelector('.risk-matrix-table');
+        const tableRect = table.getBoundingClientRect();
+        const tableWidth = tableRect.width - 120;
+        const tableHeight = tableRect.height - 80;
+
+        const markerLeft = 120 + (tableWidth / 10) * severity;
+        const markerTop = 80 + tableHeight - (tableHeight / 5) * (probability * 5);
+
+        const marker = document.getElementById('riskMarker');
+        marker.style.left = markerLeft + 'px';
+        marker.style.top = markerTop + 'px';
+    });
+</script>
+{% endblock %}

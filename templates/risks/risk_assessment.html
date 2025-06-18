@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оценка рисков | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Оценка рисков</h1>
+    <a href="{% url 'risk_create' %}" class="action-btn">Добавить риск</a>
+</div>
+
+<div class="assessment-container">
+    <div class="assessment-filters">
+        <div class="form-group">
+            <label>Опасность</label>
+            <select class="form-control" id="hazard-filter">
+                <option value="">Все опасности</option>
+                {% for hazard in hazards %}
+                <option value="{{ hazard.id }}">{{ hazard.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Подразделение</label>
+            <select class="form-control" id="department-filter">
+                <option value="">Все подразделения</option>
+                {% for department in departments %}
+                <option value="{{ department.id }}">{{ department.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button class="action-btn" id="apply-filters">Применить</button>
+    </div>
+    
+    <div class="risk-matrix">
+        <h2>Матрица рисков</h2>
+        <div class="matrix-container">
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th colspan="5">Тяжесть последствий</th>
+                    </tr>
+                    <tr>
+                        <th>Вероятность</th>
+                        <th>Незначительная (1-2)</th>
+                        <th>Низкая (3-4)</th>
+                        <th>Средняя (5-6)</th>
+                        <th>Высокая (7-8)</th>
+                        <th>Критическая (9-10)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Очень высокая (0.8-1.0)</td>
+                        <td class="risk-low">Низкий</td>
+                        <td class="risk-medium">Средний</td>
+                        <td class="risk-high">Высокий</td>
+                        <td class="risk-critical">Критический</td>
+                        <td class="risk-critical">Критический</td>
+                    </tr>
+                    <tr>
+                        <td>Высокая (0.6-0.8)</td>
+                        <td class="risk-low">Низкий</td>
+                        <td class="risk-medium">Средний</td>
+                        <td class="risk-high">Высокий</td>
+                        <td class="risk-high">Высокий</td>
+                        <td class="risk-critical">Критический</td>
+                    </tr>
+                    <tr>
+                        <td>Средняя (0.4-0.6)</td>
+                        <td class="risk-low">Низкий</td>
+                        <td class="risk-medium">Средний</td>
+                        <td class="risk-medium">Средний</td>
+                        <td class="risk-high">Высокий</td>
+                        <td class="risk-high">Высокий</td>
+                    </tr>
+                    <tr>
+                        <td>Низкая (0.2-0.4)</td>
+                        <td class="risk-low">Низкий</td>
+                        <td class="risk-low">Низкий</td>
+                        <td class="risk-medium">Средний</td>
+                        <td class="risk-medium">Средний</td>
+                        <td class="risk-high">Высокий</td>
+                    </tr>
+                    <tr>
+                        <td>Очень низкая (0.0-0.2)</td>
+                        <td class="risk-low">Низкий</td>
+                        <td class="risk-low">Низкий</td>
+                        <td class="risk-low">Низкий</td>
+                        <td class="risk-medium">Средний</td>
+                        <td class="risk-medium">Средний</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

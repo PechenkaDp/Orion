@@ -1,0 +1,97 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Орион - Панель администрирования') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <span style="font-weight: bold;">ОРИОН</span> - Система безопасности на рабочем месте
+    </a>
+</h1>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Основные цвета */
+    :root {
+        --primary: #ff7a00;
+        --secondary: #f8f8f8;
+        --accent: #ff7a00;
+        --primary-fg: #fff;
+    }
+
+    /* Заголовок */
+    #header {
+        background: var(--primary);
+        color: var(--primary-fg);
+    }
+
+    #header a:link, #header a:visited {
+        color: var(--primary-fg);
+    }
+
+    #header a:hover {
+        color: var(--secondary);
+    }
+
+    /* Кнопка добавления */
+    .object-tools a.addlink {
+        background-color: var(--accent);
+    }
+
+    /* Основная кнопка действия */
+    input[type=submit].default, .submit-row input.default {
+        background-color: var(--accent);
+    }
+
+    /* Ссылки */
+    a:link, a:visited {
+        color: var(--accent);
+    }
+
+    /* Модули на главной странице */
+    .module h2, .module caption, .inline-group h2 {
+        background-color: var(--accent);
+    }
+
+    /* Состояние выбранного пункта меню */
+    div.breadcrumbs {
+        background: #444;
+    }
+
+    /* Таблицы */
+    .dashboard #content {
+        width: 96%;
+    }
+
+    /* Календарь */
+    .calendar td a:hover, .timelist a:hover {
+        background-color: var(--accent);
+    }
+
+    .calendar td.selected a {
+        background-color: var(--accent);
+    }
+
+    /* Форма входа */
+    .login #container {
+        border: 1px solid #ddd;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .login #header {
+        padding: 15px 30px;
+    }
+
+    .login .submit-row input {
+        background-color: var(--accent);
+    }
+
+    /* Боковое меню */
+    .dashboard .module table th {
+        width: 150px;
+    }
+</style>
+{% endblock %}

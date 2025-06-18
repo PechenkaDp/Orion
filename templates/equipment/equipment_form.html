@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h3>Основные данные</h3>
+            <div class="form-group">
+                <label>Название</label>
+                {{ form.name }}
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Тип оборудования</label>
+                    {{ form.equipment_type }}
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Модель</label>
+                    {{ form.model }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Серийный номер</label>
+                {{ form.serial_number }}
+            </div>
+            <div class="form-group">
+                <label>Производитель</label>
+                {{ form.manufacturer }}
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Расположение и ответственность</h3>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Подразделение</label>
+                    {{ form.department }}
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Местоположение</label>
+                    {{ form.location }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Ответственное лицо</label>
+                {{ form.responsible_person }}
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Даты и статус</h3>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Дата приобретения</label>
+                    {{ form.purchase_date }}
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Окончание гарантии</label>
+                    {{ form.warranty_expiry_date }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Статус</label>
+                {{ form.status }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Примечания</label>
+            {{ form.notes }}
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

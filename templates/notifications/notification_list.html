@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Уведомления | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Уведомления</h1>
+    <div class="action-buttons">
+        <a href="#" class="action-btn" id="markAllReadBtn">Отметить все как прочитанные</a>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'notifications' %}">
+        <div class="filter-group">
+            <label for="is_read">Показать:</label>
+            <select name="is_read" id="is_read" class="form-control" onchange="this.form.submit()">
+                <option value="">Все уведомления</option>
+                <option value="0" {% if is_read_filter == '0' %}selected{% endif %}>Непрочитанные</option>
+                <option value="1" {% if is_read_filter == '1' %}selected{% endif %}>Прочитанные</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="notification-list">
+    {% for notification in page_obj %}
+    <div class="notification-item {% if not notification.is_read %}unread{% endif %}" data-id="{{ notification.id }}">
+        <div class="notification-icon">
+            {% if notification.notification_type == 'task' %}📋
+            {% elif notification.notification_type == 'instruction' %}📝
+            {% elif notification.notification_type == 'ppe' %}👷
+            {% elif notification.notification_type == 'inspection' %}🔍
+            {% elif notification.notification_type == 'medical' %}🏥
+            {% elif notification.notification_type == 'equipment' %}🔧
+            {% elif notification.notification_type == 'risk' %}⚠️
+            {% else %}📢
+            {% endif %}
+        </div>
+        <div class="notification-content">
+            <div class="notification-header">
+                <div class="notification-title">{{ notification.title }}</div>
+                <div class="notification-time">{{ notification.created_at|date:"d.m.Y H:i" }}</div>
+            </div>
+            <div class="notification-message">{{ notification.message }}</div>
+            {% if notification.related_entity_type %}
+            <div class="notification-link">
+                {% if notification.related_entity_type == 'medical_examination' %}
+                    <a href="{% url 'medical_exam_detail' notification.related_entity_id %}">Перейти к медицинскому осмотру</a>
+                {% elif notification.related_entity_type == 'employee' %}
+                    <a href="{% url 'employee_detail' notification.related_entity_id %}">Перейти к сотруднику</a>
+                {% elif notification.related_entity_type == 'ppe' or notification.related_entity_type == 'ppe_request' %}
+                    <a href="{% url 'ppe_detail' notification.related_entity_id %}">Перейти к заявке СИЗ</a>
+                {% elif notification.related_entity_type == 'instruction' %}
+                    <a href="{% url 'instruction_detail' notification.related_entity_id %}">Перейти к инструктажу</a>
+                {% elif notification.related_entity_type == 'document' %}
+                    <a href="{% url 'document_detail' notification.related_entity_id %}">Перейти к документу</a>
+                {% elif notification.related_entity_type == 'risk' %}
+                    <a href="{% url 'risk_detail' notification.related_entity_id %}">Перейти к риску</a>
+                {% elif notification.related_entity_type == 'inspection' %}
+                    <a href="{% url 'inspection_detail' notification.related_entity_id %}">Перейти к проверке</a>
+                {% elif notification.related_entity_type == 'equipment' %}
+                    <a href="{% url 'equipment_detail' notification.related_entity_id %}">Перейти к оборудованию</a>
+                {% else %}
+                    <a href="#">Перейти к {{ notification.related_entity_type }}</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="notification-actions">
+            {% if not notification.is_read %}
+            <a href="#" class="mark-read-btn icon-btn" data-id="{{ notification.id }}" title="Отметить как прочитанное"><span class="btn-icon">✓</span></a>
+            {% else %}
+            <span class="read-indicator" title="Прочитано">✓</span>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-notification">Нет уведомлений</div>
+    {% endfor %}
+</div>
+
+{% include 'partials/pagination.html' with page=page_obj %}
+
+<style>
+    .notification-list {
+        margin-bottom: 20px;
+    }
+
+    .notification-item {
+        display: flex;
+        background-color: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .notification-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .notification-item.unread {
+        background-color: #fff8e1;
+        border-left: 3px solid #ff7a00;
+    }
+
+    .notification-item.fade-out {
+        opacity: 0.5;
+        transform: translateX(30px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .notification-icon {
+        width: 40px;
+        height: 40px;
+        background-color: #f5f5f5;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 18px;
+    }
+
+    .notification-content {
+        flex: 1;
+    }
+
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+
+    .notification-title {
+        font-weight: bold;
+    }
+
+    .notification-time {
+        color: #666;
+        font-size: 12px;
+    }
+
+    .notification-message {
+        margin-bottom: 5px;
+    }
+
+    .notification-link {
+        font-size: 14px;
+    }
+
+    .notification-link a {
+        color: #ff7a00;
+        text-decoration: none;
+    }
+
+    .notification-link a:hover {
+        text-decoration: underline;
+    }
+
+    .notification-actions {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .empty-notification {
+        text-align: center;
+        padding: 30px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        color: #666;
+    }
+
+    .mark-read-btn {
+        cursor: pointer;
+    }
+
+    .read-indicator {
+        color: #4caf50;
+        margin: 8px;
+        font-size: 16px;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обработчик для отметки всех уведомлений как прочитанных
+        document.getElementById('markAllReadBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Отправляем AJAX-запрос на сервер
+            fetch('{% url "notifications_mark_all_read" %}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Обновляем внешний вид всех непрочитанных уведомлений
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        item.classList.remove('unread');
+
+                        // Заменяем кнопку отметки на индикатор прочитанного
+                        const actionDiv = item.querySelector('.notification-actions');
+                        actionDiv.innerHTML = '<span class="read-indicator" title="Прочитано">✓</span>';
+                    });
+
+                    // Показываем уведомление пользователю
+                    alert('Все уведомления отмечены как прочитанные.');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при отметке уведомлений:', error);
+                alert('Произошла ошибка при отметке уведомлений.');
+            });
+        });
+
+        // Обработчик для отметки отдельного уведомления как прочитанного
+        document.querySelectorAll('.mark-read-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const notificationId = this.getAttribute('data-id');
+                const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+
+                // Отправляем AJAX-запрос на сервер
+                fetch(`/notifications/mark_read/${notificationId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Обновляем внешний вид уведомления
+                        notificationItem.classList.add('fade-out');
+
+                        // Применяем изменения после короткой задержки для анимации
+                        setTimeout(() => {
+                            notificationItem.classList.remove('unread');
+                            notificationItem.classList.remove('fade-out');
+
+                            // Заменяем кнопку отметки на индикатор прочитанного
+                            const actionDiv = notificationItem.querySelector('.notification-actions');
+                            actionDiv.innerHTML = '<span class="read-indicator" title="Прочитано">✓</span>';
+                        }, 300);
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка при отметке уведомления:', error);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

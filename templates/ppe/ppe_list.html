@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Задачи СИЗ | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Задачи СИЗ</h1>
+    <button class="action-btn" onclick="location.href='{% url 'ppe_create' %}'">Создать заявку</button>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'ppe_list' %}">
+        <div class="filter-group">
+            <label for="status">Статус:</label>
+            <select name="status" id="status" class="form-control" onchange="this.form.submit()">
+                <option value="">Все статусы</option>
+                <option value="new" {% if status_filter == 'new' %}selected{% endif %}>Новая</option>
+                <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>В обработке</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Выполнено</option>
+                <option value="canceled" {% if status_filter == 'canceled' %}selected{% endif %}>Отменено</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Сотрудник</th>
+                <th>СИЗ</th>
+                <th>Количество</th>
+                <th>Дата заявки</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in page_obj %}
+            <tr>
+                <td>#{{ request.id }}</td>
+                <td>{{ request.employee }}</td>
+                <td>{{ request.ppe_item.name }}</td>
+                <td>{{ request.quantity }}</td>
+                <td>{{ request.request_date|date:"d.m.Y H:i" }}</td>
+                <td>
+                    <span class="status-badge {% if request.status == 'new' %}status-pending{% elif request.status == 'in_progress' %}status-pending{% elif request.status == 'completed' %}status-completed{% elif request.status == 'canceled' %}status-urgent{% endif %}">
+                        {% if request.status == 'new' %}Новая{% elif request.status == 'in_progress' %}В обработке{% elif request.status == 'completed' %}Выполнено{% elif request.status == 'canceled' %}Отменено{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'ppe_detail' request.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'ppe_update' request.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                    <a href="{% url 'ppe_delete' request.id %}" class="icon-btn" title="Удалить"><span class="btn-icon">🗑️</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="empty-table">Заявки на СИЗ не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'partials/pagination.html' with page=page_obj %}
+{% endblock %}

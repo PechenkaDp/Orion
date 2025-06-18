@@ -1,0 +1,201 @@
+{% extends 'reports/custom_report.html' %}
+{% load static %}
+
+{% block title %}Ежемесячный отчет | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Ежемесячный отчет по безопасности</h1>
+    <div class="action-buttons">
+        <button class="action-btn" onclick="window.print()">Печать</button>
+        <button class="action-btn">Экспорт в PDF</button>
+        <button class="action-btn">Экспорт в Excel</button>
+    </div>
+</div>
+
+<div class="report-header">
+    <div class="report-date">Отчет сформирован: {% now "d.m.Y H:i" %}</div>
+    <div class="report-date">Период: {% if date_from %}{{ date_from }}{% else %}01.{% now "m.Y" %}{% endif %} - {% if date_to %}{{ date_to }}{% else %}{% now "d.m.Y" %}{% endif %}</div>
+</div>
+
+<div class="report-content">
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-header">
+                <div class="card-icon">📊</div>
+                Основные показатели за месяц
+            </div>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-value">{{ incident_free_days|default:"30" }}</div>
+                    <div class="stat-label">Дней без происшествий</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ instruction_count|default:"5" }}</div>
+                    <div class="stat-label">Проведено инструктажей</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ compliance_percentage|default:"95" }}%</div>
+                    <div class="stat-label">Соответствие требованиям</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-header">
+                <div class="card-icon">⚠️</div>
+                Статистика рисков
+            </div>
+            <div class="chart-container">
+                <canvas id="risksChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section-title">Проведенные инструктажи</div>
+    
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Тип инструктажа</th>
+                    <th>Подразделение</th>
+                    <th>Количество участников</th>
+                    <th>Инструктор</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>05.03.2025</td>
+                    <td>Повторный инструктаж</td>
+                    <td>Цех №1</td>
+                    <td>12</td>
+                    <td>Иванов И.И.</td>
+                </tr>
+                <tr>
+                    <td>10.03.2025</td>
+                    <td>Вводный инструктаж</td>
+                    <td>Администрация</td>
+                    <td>3</td>
+                    <td>Петров П.П.</td>
+                </tr>
+                <tr>
+                    <td>15.03.2025</td>
+                    <td>Внеплановый инструктаж</td>
+                    <td>Склад</td>
+                    <td>8</td>
+                    <td>Сидоров С.С.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section-title">Выявленные нарушения</div>
+    
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Описание</th>
+                    <th>Подразделение</th>
+                    <th>Тяжесть</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>07.03.2025</td>
+                    <td>Отсутствие знаков безопасности</td>
+                    <td>Цех №1</td>
+                    <td>Средняя</td>
+                    <td>Устранено</td>
+                </tr>
+                <tr>
+                    <td>12.03.2025</td>
+                    <td>Загромождение проходов</td>
+                    <td>Склад</td>
+                    <td>Средняя</td>
+                    <td>В работе</td>
+                </tr>
+                <tr>
+                    <td>20.03.2025</td>
+                    <td>Неисправное оборудование</td>
+                    <td>Цех №1</td>
+                    <td>Высокая</td>
+                    <td>Устранено</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="report-actions">
+    <button class="action-btn" onclick="window.history.back()">Назад</button>
+    <button class="action-btn" onclick="window.print()">Печать</button>
+</div>
+
+<style>
+    .report-header {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+    
+    .report-date {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+    
+    .report-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 20px;
+    }
+    
+    .report-actions .action-btn {
+        margin-left: 10px;
+    }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Диаграмма рисков
+        var risksCtx = document.getElementById('risksChart').getContext('2d');
+        var risksChart = new Chart(risksCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Низкий', 'Средний', 'Высокий', 'Критический'],
+                datasets: [{
+                    data: [30, 45, 20, 5],
+                    backgroundColor: [
+                        '#4caf50',
+                        '#ff9800',
+                        '#f44336',
+                        '#9c0006'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

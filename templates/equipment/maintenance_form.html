@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Обслуживание оборудования | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Обслуживание оборудования</h1>
+    <h2>{{ equipment.name }}</h2>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Тип обслуживания</label>
+            {{ form.maintenance_type }}
+        </div>
+        
+        <div class="form-group">
+            <label>Дата обслуживания</label>
+            {{ form.maintenance_date }}
+        </div>
+        
+        <div class="form-group">
+            <label>Описание работ</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-group">
+            <label>Результат</label>
+            {{ form.result }}
+        </div>
+        
+        <div class="form-group">
+            <label>Дата следующего обслуживания</label>
+            {{ form.next_maintenance_date }}
+        </div>
+        
+        <div class="form-group">
+            <label>Документы</label>
+            {{ form.documents_path }}
+        </div>
+        
+        <div class="form-group">
+            <label>Примечания</label>
+            {{ form.notes }}
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

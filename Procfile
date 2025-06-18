@@ -1,0 +1,1 @@
+web: gunicorn OrionWorkSec.wsgi --log-file -

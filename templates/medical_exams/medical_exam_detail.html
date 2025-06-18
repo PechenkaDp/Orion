@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Медосмотр: {{ medical_exam.employee.user.last_name }} {{ medical_exam.employee.user.first_name }} | Орион{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Медицинский осмотр</h1>
+    <div class="action-buttons">
+        <a href="{% url 'medical_exam_update' medical_exam.id %}" class="action-btn">Редактировать</a>
+        <a href="{% url 'medical_exam_delete' medical_exam.id %}" class="action-btn btn-danger">Удалить</a>
+    </div>
+</div>
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Информация о медосмотре</h2>
+            <span class="status-badge
+                {% if medical_exam.next_exam_date < current_date %}status-urgent
+                {% elif medical_exam.next_exam_date < next_month %}status-pending
+                {% else %}status-completed{% endif %}">
+                {% if medical_exam.next_exam_date < current_date %}Просрочен
+                {% elif medical_exam.next_exam_date < next_month %}Скоро
+                {% else %}В норме{% endif %}
+            </span>
+        </div>
+    <div class="detail-content">
+        <div class="detail-row">
+            <div class="detail-label">Сотрудник:</div>
+            <div class="detail-value">{{ medical_exam.employee.user.last_name }} {{ medical_exam.employee.user.first_name }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Подразделение:</div>
+            <div class="detail-value">{{ medical_exam.employee.department.name }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Должность:</div>
+            <div class="detail-value">{{ medical_exam.employee.position }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Дата осмотра:</div>
+            <div class="detail-value">{{ medical_exam.exam_date|date:"d.m.Y" }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Дата следующего осмотра:</div>
+            <div class="detail-value {% if medical_exam.next_exam_date < current_date %}overdue{% endif %}">
+                {{ medical_exam.next_exam_date|date:"d.m.Y" }}
+                {% if medical_exam.next_exam_date < current_date %}
+                <span class="status-badge status-urgent">Просрочен</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Тип осмотра:</div>
+            <div class="detail-value">{{ medical_exam.exam_type }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Медицинское учреждение:</div>
+            <div class="detail-value">{{ medical_exam.medical_facility }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Врач:</div>
+            <div class="detail-value">{{ medical_exam.doctor|default:"Не указан" }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Результат:</div>
+            <div class="detail-value">{{ medical_exam.result }}</div>
+        </div>
+        {% if medical_exam.recommendations %}
+        <div class="detail-row">
+            <div class="detail-label">Рекомендации:</div>
+            <div class="detail-value">{{ medical_exam.recommendations }}</div>
+        </div>
+        {% endif %}
+        {% if medical_exam.restrictions %}
+        <div class="detail-row">
+            <div class="detail-label">Ограничения:</div>
+            <div class="detail-value">{{ medical_exam.restrictions }}</div>
+        </div>
+        {% endif %}
+        {% if medical_exam.document %}
+        <div class="detail-row">
+            <div class="detail-label">Документ:</div>
+            <div class="detail-value">
+                <a href="{{ medical_exam.document.url }}" class="file-link" target="_blank">Скачать документ</a>
+            </div>
+        </div>
+        {% endif %}
+        {% if medical_exam.notes %}
+        <div class="detail-row">
+            <div class="detail-label">Примечания:</div>
+            <div class="detail-value">{{ medical_exam.notes }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-card">
+    <div class="detail-header">
+        <h2>История медосмотров сотрудника</h2>
+    </div>
+    <div class="detail-content">
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Тип</th>
+                    <th>Медучреждение</th>
+                    <th>Результат</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in employee_exams %}
+                <tr {% if exam.id == medical_exam.id %}class="active-row"{% endif %}>
+                    <td>{{ exam.exam_date|date:"d.m.Y" }}</td>
+                    <td>{{ exam.exam_type }}</td>
+                    <td>{{ exam.medical_facility }}</td>
+                    <td>{{ exam.result }}</td>
+                    <td>
+                        <a href="{% url 'medical_exam_detail' exam.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-table">История медосмотров отсутствует</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+<style>
+    .overdue {
+        color: #f44336;
+        font-weight: bold;
+    }
+
+    .active-row {
+        background-color: #fff8e1;
+    }
+
+    .file-link {
+        color: #ff7a00;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .file-link:hover {
+        text-decoration: underline;
+    }
+
+    .file-link:before {
+        content: '📄';
+        margin-right: 5px;
+    }
+</style>
+{% endblock %}

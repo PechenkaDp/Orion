@@ -1,0 +1,808 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE SCHEMA IF NOT EXISTS workplace_safety;
+
+SET search_path TO workplace_safety, public;
+
+CREATE TYPE user_role AS ENUM (
+    'admin', 
+    'safety_specialist', 
+    'department_head', 
+    'employee', 
+    'medical_worker', 
+    'technician'
+);
+
+CREATE TYPE task_status AS ENUM (
+    'new', 
+    'in_progress', 
+    'completed', 
+    'canceled'
+);
+
+CREATE TYPE risk_level AS ENUM (
+    'low', 
+    'medium', 
+    'high', 
+    'critical'
+);
+
+CREATE TYPE equipment_status AS ENUM (
+    'operational', 
+    'requires_maintenance', 
+    'under_maintenance', 
+    'decommissioned'
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(150) NOT NULL UNIQUE,
+    email VARCHAR(254) NOT NULL UNIQUE,
+    password VARCHAR(128) NOT NULL,
+    first_name VARCHAR(150) NOT NULL,
+    last_name VARCHAR(150) NOT NULL,
+    role user_role NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_banned BOOLEAN NOT NULL DEFAULT FALSE,
+    last_login TIMESTAMP WITH TIME ZONE,
+    date_joined TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    action VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    details JSONB
+);
+
+
+CREATE TABLE departments (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    parent_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    position VARCHAR(255) NOT NULL,
+    hire_date DATE NOT NULL,
+    medical_exam_date DATE,
+    next_medical_exam_date DATE,
+    personal_id_number VARCHAR(50) UNIQUE,
+    emergency_contact VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ppe_items (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(100) NOT NULL,
+    standard_issue_period INTEGER, -- в днях
+    certification_number VARCHAR(100),
+    manufacturer VARCHAR(255),
+    supplier VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ppe_requests (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    ppe_item_id INTEGER NOT NULL REFERENCES ppe_items(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    request_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status task_status NOT NULL DEFAULT 'new',
+    processed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    processed_date TIMESTAMP WITH TIME ZONE,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ppe_issuance (
+    id SERIAL PRIMARY KEY,
+    request_id INTEGER REFERENCES ppe_requests(id) ON DELETE SET NULL,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    ppe_item_id INTEGER NOT NULL REFERENCES ppe_items(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    issue_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expected_return_date TIMESTAMP WITH TIME ZONE,
+    actual_return_date TIMESTAMP WITH TIME ZONE,
+    issued_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    condition_on_issue TEXT,
+    condition_on_return TEXT,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE documents (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    document_type VARCHAR(100) NOT NULL,
+    file_path VARCHAR(255),
+    description TEXT,
+    publish_date DATE,
+    effective_date DATE,
+    expiry_date DATE,
+    version VARCHAR(50),
+    author VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE instruction_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    period_days INTEGER, -- периодичность в днях, NULL если непериодический
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE instructions (
+    id SERIAL PRIMARY KEY,
+    instruction_type_id INTEGER NOT NULL REFERENCES instruction_types(id) ON DELETE CASCADE,
+    instructor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    instruction_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    next_instruction_date TIMESTAMP WITH TIME ZONE,
+    location VARCHAR(255),
+    duration INTEGER, -- в минутах
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE instruction_participants (
+    id SERIAL PRIMARY KEY,
+    instruction_id INTEGER NOT NULL REFERENCES instructions(id) ON DELETE CASCADE,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL DEFAULT 'attended',
+    test_result NUMERIC(5, 2), -- результат проверки знаний, если есть
+    signature_path VARCHAR(255), -- путь к файлу с подписью
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (instruction_id, employee_id)
+);
+
+CREATE TABLE equipment (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    equipment_type VARCHAR(100) NOT NULL,
+    model VARCHAR(255),
+    serial_number VARCHAR(255) UNIQUE,
+    manufacturer VARCHAR(255),
+    purchase_date DATE,
+    warranty_expiry_date DATE,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    location VARCHAR(255),
+    status equipment_status NOT NULL DEFAULT 'operational',
+    last_maintenance_date TIMESTAMP WITH TIME ZONE,
+    next_maintenance_date TIMESTAMP WITH TIME ZONE,
+    responsible_person_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE equipment_maintenance (
+    id SERIAL PRIMARY KEY,
+    equipment_id INTEGER NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
+    maintenance_type VARCHAR(100) NOT NULL,
+    maintenance_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    performed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    description TEXT,
+    result VARCHAR(100) NOT NULL,
+    next_maintenance_date TIMESTAMP WITH TIME ZONE,
+    documents_path VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE hazards (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE risks (
+    id SERIAL PRIMARY KEY,
+    hazard_id INTEGER NOT NULL REFERENCES hazards(id) ON DELETE CASCADE,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    location VARCHAR(255),
+    level risk_level NOT NULL,
+    probability NUMERIC(3, 2) NOT NULL, -- от 0 до 1
+    severity INTEGER NOT NULL, -- от 1 до 10
+    description TEXT,
+    evaluation_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    evaluated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE risk_mitigation_measures (
+    id SERIAL PRIMARY KEY,
+    risk_id INTEGER NOT NULL REFERENCES risks(id) ON DELETE CASCADE,
+    description TEXT NOT NULL,
+    status task_status NOT NULL DEFAULT 'new',
+    responsible_person_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,
+    deadline TIMESTAMP WITH TIME ZONE,
+    completion_date TIMESTAMP WITH TIME ZONE,
+    effectiveness_rating INTEGER, -- от 1 до 10
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE inspections (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    inspection_type VARCHAR(100) NOT NULL,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE,
+    lead_inspector_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    status task_status NOT NULL DEFAULT 'new',
+    description TEXT,
+    result TEXT,
+    report_path VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE inspection_findings (
+    id SERIAL PRIMARY KEY,
+    inspection_id INTEGER NOT NULL REFERENCES inspections(id) ON DELETE CASCADE,
+    description TEXT NOT NULL,
+    severity VARCHAR(50) NOT NULL,
+    location VARCHAR(255),
+    responsible_department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    deadline TIMESTAMP WITH TIME ZONE,
+    status task_status NOT NULL DEFAULT 'new',
+    resolution TEXT,
+    completion_date TIMESTAMP WITH TIME ZONE,
+    verified_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE incidents (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    incident_type VARCHAR(100) NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    incident_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    reported_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    report_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    description TEXT NOT NULL,
+    severity VARCHAR(50) NOT NULL,
+    immediate_actions TEXT,
+    investigation_status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    root_cause TEXT,
+    preventive_measures TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE incident_victims (
+    id SERIAL PRIMARY KEY,
+    incident_id INTEGER NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    injury_description TEXT,
+    medical_assistance VARCHAR(255),
+    work_days_lost INTEGER DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE safety_tasks (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    task_type VARCHAR(100) NOT NULL,
+    priority VARCHAR(50) NOT NULL DEFAULT 'medium',
+    status task_status NOT NULL DEFAULT 'new',
+    assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    assigned_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    start_date TIMESTAMP WITH TIME ZONE,
+    deadline TIMESTAMP WITH TIME ZONE,
+    completion_date TIMESTAMP WITH TIME ZONE,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE workplace_assessments (
+    id SERIAL PRIMARY KEY,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    workplace_name VARCHAR(255) NOT NULL,
+    assessment_date DATE NOT NULL,
+    next_assessment_date DATE NOT NULL,
+    assessor VARCHAR(255) NOT NULL,
+    result VARCHAR(50) NOT NULL,
+    hazard_class INTEGER NOT NULL, -- класс вредности (1-4)
+    report_number VARCHAR(100) NOT NULL,
+    report_file_path VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE medical_examinations (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    exam_date DATE NOT NULL,
+    next_exam_date DATE NOT NULL,
+    exam_type VARCHAR(100) NOT NULL,
+    medical_facility VARCHAR(255) NOT NULL,
+    doctor VARCHAR(255),
+    result VARCHAR(50) NOT NULL,
+    recommendations TEXT,
+    restrictions TEXT,
+    document_path VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    related_entity_type VARCHAR(100),
+    related_entity_id INTEGER,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+
+CREATE INDEX idx_user_logs_user_id ON user_logs(user_id);
+CREATE INDEX idx_user_logs_timestamp ON user_logs(timestamp);
+
+CREATE INDEX idx_employees_user_id ON employees(user_id);
+CREATE INDEX idx_employees_department_id ON employees(department_id);
+
+CREATE INDEX idx_ppe_requests_employee_id ON ppe_requests(employee_id);
+CREATE INDEX idx_ppe_requests_status ON ppe_requests(status);
+
+CREATE INDEX idx_ppe_issuance_employee_id ON ppe_issuance(employee_id);
+CREATE INDEX idx_ppe_issuance_ppe_item_id ON ppe_issuance(ppe_item_id);
+
+CREATE INDEX idx_instructions_instruction_type_id ON instructions(instruction_type_id);
+CREATE INDEX idx_instructions_department_id ON instructions(department_id);
+
+CREATE INDEX idx_instruction_participants_instruction_id ON instruction_participants(instruction_id);
+CREATE INDEX idx_instruction_participants_employee_id ON instruction_participants(employee_id);
+
+CREATE INDEX idx_equipment_department_id ON equipment(department_id);
+CREATE INDEX idx_equipment_status ON equipment(status);
+
+CREATE INDEX idx_risks_hazard_id ON risks(hazard_id);
+CREATE INDEX idx_risks_department_id ON risks(department_id);
+CREATE INDEX idx_risks_level ON risks(level);
+
+CREATE INDEX idx_inspections_department_id ON inspections(department_id);
+CREATE INDEX idx_inspections_status ON inspections(status);
+
+CREATE INDEX idx_incidents_department_id ON incidents(department_id);
+CREATE INDEX idx_incidents_incident_date ON incidents(incident_date);
+
+CREATE INDEX idx_safety_tasks_assigned_to ON safety_tasks(assigned_to);
+CREATE INDEX idx_safety_tasks_status ON safety_tasks(status);
+CREATE INDEX idx_safety_tasks_department_id ON safety_tasks(department_id);
+
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+DECLARE
+    t text;
+BEGIN
+    FOR t IN 
+        SELECT table_name 
+        FROM information_schema.columns 
+        WHERE column_name = 'updated_at' 
+        AND table_schema = 'workplace_safety'
+    LOOP
+        EXECUTE format('CREATE TRIGGER set_updated_at
+                        BEFORE UPDATE ON %I
+                        FOR EACH ROW
+                        EXECUTE FUNCTION update_modified_column()', t);
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_user_action()
+RETURNS TRIGGER AS $$
+DECLARE
+    action_type text;
+    details jsonb;
+BEGIN
+
+    IF TG_OP = 'INSERT' THEN
+        action_type := 'create';
+    ELSIF TG_OP = 'UPDATE' THEN
+        action_type := 'update';
+    ELSIF TG_OP = 'DELETE' THEN
+        action_type := 'delete';
+    END IF;
+    
+    IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+        details := to_jsonb(NEW);
+    ELSE
+        details := to_jsonb(OLD);
+    END IF;
+    
+    INSERT INTO user_logs (user_id, action, details)
+    VALUES (NULLIF(current_setting('app.current_user_id', TRUE), '')::integer, 
+            TG_TABLE_NAME || '_' || action_type, 
+            details);
+    
+    RETURN NULL; -- Для триггера AFTER не имеет значения, что возвращаем
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON TABLE users IS 'Таблица пользователей системы с авторизационными данными';
+COMMENT ON TABLE user_logs IS 'Журнал действий пользователей системы';
+COMMENT ON TABLE departments IS 'Организационная структура (подразделения предприятия)';
+COMMENT ON TABLE employees IS 'Данные о сотрудниках, связанные с основной таблицей пользователей';
+COMMENT ON TABLE ppe_items IS 'Каталог средств индивидуальной защиты (СИЗ)';
+COMMENT ON TABLE ppe_requests IS 'Заявки на выдачу СИЗ';
+COMMENT ON TABLE ppe_issuance IS 'Учет выдачи и возврата СИЗ сотрудникам';
+COMMENT ON TABLE documents IS 'Нормативные документы и инструкции по охране труда';
+COMMENT ON TABLE instruction_types IS 'Типы проводимых инструктажей';
+COMMENT ON TABLE instructions IS 'Записи о проведенных инструктажах';
+COMMENT ON TABLE instruction_participants IS 'Участники инструктажей';
+COMMENT ON TABLE equipment IS 'Реестр оборудования';
+COMMENT ON TABLE equipment_maintenance IS 'Журнал обслуживания оборудования';
+COMMENT ON TABLE hazards IS 'Справочник опасностей';
+COMMENT ON TABLE risks IS 'Реестр выявленных рисков';
+COMMENT ON TABLE risk_mitigation_measures IS 'Мероприятия по снижению выявленных рисков';
+COMMENT ON TABLE inspections IS 'Проверки состояния охраны труда';
+COMMENT ON TABLE inspection_findings IS 'Выявленные нарушения в ходе проверок';
+COMMENT ON TABLE incidents IS 'Регистрация происшествий и несчастных случаев';
+COMMENT ON TABLE incident_victims IS 'Учет пострадавших в происшествиях';
+COMMENT ON TABLE safety_tasks IS 'Задачи по охране труда';
+COMMENT ON TABLE workplace_assessments IS 'Результаты специальной оценки условий труда';
+COMMENT ON TABLE medical_examinations IS 'Медицинские осмотры сотрудников';
+COMMENT ON TABLE notifications IS 'Система уведомлений пользователей';
+
+INSERT INTO departments (name, description) VALUES
+('Администрация', 'Руководство компании'),
+('Отдел охраны труда', 'Специалисты по охране труда'),
+('Производственный цех №1', 'Основной производственный цех'),
+('Склад', 'Складские помещения'),
+('ИТ-отдел', 'Отдел информационных технологий'),
+('Бухгалтерия', 'Финансовый отдел');
+
+INSERT INTO users (username, email, password, first_name, last_name, role) VALUES
+('admin', 'admin@example.com', 'pbkdf2_sha256$600000$gQ6kVaNPCBMdg5cQD0aCCu$uVP9YYyMj5VUV0QIGcqEVmQzBrJ+kQdQlIsgP/a8rHo=', 'Админ', 'Админов', 'admin'),
+('safety_specialist', 'safety@example.com', 'pbkdf2_sha256$600000$gQ6kVaNPCBMdg5cQD0aCCu$uVP9YYyMj5VUV0QIGcqEVmQzBrJ+kQdQlIsgP/a8rHo=', 'Иван', 'Петров', 'safety_specialist'),
+('department_head', 'head@example.com', 'pbkdf2_sha256$600000$gQ6kVaNPCBMdg5cQD0aCCu$uVP9YYyMj5VUV0QIGcqEVmQzBrJ+kQdQlIsgP/a8rHo=', 'Мария', 'Сидорова', 'department_head'),
+('employee1', 'emp1@example.com', 'pbkdf2_sha256$600000$gQ6kVaNPCBMdg5cQD0aCCu$uVP9YYyMj5VUV0QIGcqEVmQzBrJ+kQdQlIsgP/a8rHo=', 'Алексей', 'Иванов', 'employee'),
+('employee2', 'emp2@example.com', 'pbkdf2_sha256$600000$gQ6kVaNPCBMdg5cQD0aCCu$uVP9YYyMj5VUV0QIGcqEVmQzBrJ+kQdQlIsgP/a8rHo=', 'Ольга', 'Смирнова', 'employee'),
+('medical', 'medical@example.com', 'pbkdf2_sha256$600000$gQ6kVaNPCBMdg5cQD0aCCu$uVP9YYyMj5VUV0QIGcqEVmQzBrJ+kQdQlIsgP/a8rHo=', 'Елена', 'Врачева', 'medical_worker'),
+('technician', 'tech@example.com', 'pbkdf2_sha256$600000$gQ6kVaNPCBMdg5cQD0aCCu$uVP9YYyMj5VUV0QIGcqEVmQzBrJ+kQdQlIsgP/a8rHo=', 'Сергей', 'Мастеров', 'technician');
+
+INSERT INTO employees (user_id, department_id, position, hire_date, medical_exam_date, next_medical_exam_date) VALUES
+(1, 1, 'Генеральный директор', '2020-01-01', '2023-01-10', '2024-01-10'),
+(2, 2, 'Специалист по охране труда', '2021-03-15', '2023-02-20', '2024-02-20'),
+(3, 3, 'Начальник цеха', '2020-05-20', '2023-03-05', '2024-03-05'),
+(4, 3, 'Оператор станка', '2022-02-10', '2023-04-15', '2024-04-15'),
+(5, 4, 'Кладовщик', '2022-07-01', '2023-05-25', '2024-05-25'),
+(6, 1, 'Медицинский работник', '2021-09-12', '2023-06-30', '2024-06-30'),
+(7, 5, 'Техник-специалист', '2023-01-15', '2023-07-10', '2024-07-10');
+
+INSERT INTO ppe_items (name, description, category, standard_issue_period) VALUES
+('Защитная каска', 'Защитная каска для строительных работ', 'Защита головы', 730), -- 2 года
+('Защитные очки', 'Очки для защиты глаз', 'Защита глаз', 365), -- 1 год
+('Респиратор', 'Респиратор для защиты органов дыхания', 'Защита органов дыхания', 90), -- 3 месяца
+('Защитные перчатки', 'Перчатки для работы с химикатами', 'Защита рук', 30), -- 1 месяц
+('Защитная обувь', 'Обувь со стальным носком', 'Защита ног', 365); -- 1 год
+
+INSERT INTO instruction_types (name, description, period_days) VALUES
+('Вводный инструктаж', 'Проводится для всех вновь принимаемых на работу', NULL),
+('Первичный инструктаж', 'Проводится на рабочем месте до начала работы', NULL),
+('Повторный инструктаж', 'Периодический инструктаж для всех работников', 180), -- раз в 6 месяцев
+('Целевой инструктаж', 'Проводится перед выполнением разовых работ', NULL),
+('Внеплановый инструктаж', 'При изменении технологии или после происшествий', NULL);
+
+INSERT INTO instructions (instruction_type_id, instructor_id, department_id, instruction_date, next_instruction_date, location) VALUES
+(1, 2, 3, '2024-03-01 10:00:00', NULL, 'Конференц-зал'),
+(2, 2, 3, '2024-03-02 14:00:00', NULL, 'Цех №1'),
+(3, 2, 4, '2024-03-15 09:00:00', '2024-09-15 09:00:00', 'Склад'),
+(4, 3, 3, '2024-03-20 11:00:00', NULL, 'Цех №1'),
+(3, 2, 5, '2024-03-25 10:00:00', '2024-09-25 10:00:00', 'ИТ-отдел');
+
+INSERT INTO instruction_participants (instruction_id, employee_id, status, test_result) VALUES
+(1, 4, 'attended', 95.5),
+(1, 5, 'attended', 90.0),
+(2, 4, 'attended', 100.0),
+(3, 5, 'attended', 85.5),
+(4, 4, 'attended', 92.0),
+(5, 7, 'attended', 98.0);
+
+INSERT INTO hazards (name, description, category) VALUES
+('Падение с высоты', 'Риск падения при работе на высоте', 'Физические опасности'),
+('Химические вещества', 'Воздействие опасных химических веществ', 'Химические опасности'),
+('Поражение электрическим током', 'Риск поражения электрическим током', 'Электрические опасности'),
+('Движущиеся механизмы', 'Опасность от движущихся частей оборудования', 'Механические опасности'),
+('Шум', 'Повышенный уровень шума', 'Физические опасности'),
+('Вибрация', 'Повышенный уровень вибрации', 'Физические опасности'),
+('Недостаточное освещение', 'Плохая видимость на рабочем месте', 'Физические опасности'),
+('Повышенная температура', 'Работа при высоких температурах', 'Физические опасности');
+
+INSERT INTO risks (hazard_id, department_id, location, level, probability, severity, description, evaluated_by) VALUES
+(1, 3, 'Цех №1, монтажная площадка', 'high', 0.7, 8, 'Риск падения при монтажных работах на высоте', 2),
+(2, 3, 'Цех №1, участок окраски', 'medium', 0.5, 6, 'Воздействие паров краски', 2),
+(3, 5, 'Серверная', 'medium', 0.4, 7, 'Риск поражения током при работе с электрооборудованием', 2),
+(4, 3, 'Цех №1, участок механической обработки', 'high', 0.6, 8, 'Риск травмирования движущимися частями станков', 2),
+(5, 3, 'Цех №1, весь цех', 'medium', 0.8, 5, 'Постоянный повышенный уровень шума', 2);
+
+INSERT INTO risk_mitigation_measures (risk_id, description, status, responsible_person_id, deadline) VALUES
+(1, 'Установка дополнительных ограждений и страховочных систем', 'in_progress', 3, '2024-04-30 00:00:00'),
+(1, 'Проведение внепланового инструктажа по работе на высоте', 'completed', 2, '2024-03-10 00:00:00'),
+(2, 'Установка дополнительной вентиляции на участке окраски', 'new', 3, '2024-05-15 00:00:00'),
+(3, 'Проверка и замена изоляции электропроводки', 'in_progress', 7, '2024-04-15 00:00:00'),
+(4, 'Установка дополнительных защитных экранов на станки', 'new', 3, '2024-05-30 00:00:00'),
+(5, 'Выдача новых СИЗ для защиты органов слуха', 'completed', 2, '2024-03-05 00:00:00');
+
+INSERT INTO equipment (name, equipment_type, model, serial_number, manufacturer, purchase_date, department_id, status, responsible_person_id) VALUES
+('Токарный станок', 'Станок', 'ТС-1000', 'TS10005678', 'СтанкоСтрой', '2020-05-15', 3, 'operational', 4),
+('Фрезерный станок', 'Станок', 'ФС-500', 'FS5001234', 'СтанкоСтрой', '2021-03-10', 3, 'operational', 4),
+('Вилочный погрузчик', 'Погрузчик', 'ВП-2', 'VP2004567', 'ТехМаш', '2019-10-20', 4, 'requires_maintenance', 5),
+('Компрессор', 'Компрессор', 'К-100', 'K1003456', 'КомпрессорПром', '2022-01-25', 3, 'operational', 4),
+('Серверная стойка', 'ИТ-оборудование', 'СС-42U', 'SS42U7890', 'ТехСервер', '2021-09-15', 5, 'operational', 7);
+
+INSERT INTO equipment_maintenance (equipment_id, maintenance_type, maintenance_date, performed_by, description, result, next_maintenance_date) VALUES
+(1, 'Плановое ТО', '2024-01-15 10:00:00', 7, 'Регулярное техническое обслуживание', 'Исправен', '2024-07-15 10:00:00'),
+(2, 'Плановое ТО', '2024-02-10 09:00:00', 7, 'Регулярное техническое обслуживание', 'Исправен', '2024-08-10 09:00:00'),
+(3, 'Внеплановый ремонт', '2024-03-05 14:00:00', 7, 'Ремонт гидравлической системы', 'Требуется замена детали', '2024-03-12 14:00:00'),
+(4, 'Плановое ТО', '2024-03-01 11:00:00', 7, 'Регулярное техническое обслуживание', 'Исправен', '2024-06-01 11:00:00'),
+(5, 'Профилактические работы', '2024-02-20 16:00:00', 7, 'Очистка от пыли, проверка систем охлаждения', 'Исправен', '2024-08-20 16:00:00');
+
+INSERT INTO inspections (title, inspection_type, department_id, start_date, end_date, lead_inspector_id, status) VALUES
+('Плановая проверка цеха №1', 'Плановая', 3, '2024-02-15 09:00:00', '2024-02-15 17:00:00', 2, 'completed'),
+('Внеплановая проверка склада', 'Внеплановая', 4, '2024-03-10 10:00:00', '2024-03-10 15:00:00', 2, 'completed'),
+('Проверка пожарной безопасности', 'Тематическая', 1, '2024-03-20 09:00:00', '2024-03-22 17:00:00', 2, 'in_progress'),
+('Проверка электробезопасности', 'Тематическая', 5, '2024-04-05 10:00:00', NULL, 2, 'new'),
+('Аудит соответствия требованиям ОТ', 'Аудит', 3, '2024-04-15 09:00:00', NULL, 2, 'new');
+
+INSERT INTO inspection_findings (inspection_id, description, severity, location, responsible_department_id, deadline, status) VALUES
+(1, 'Отсутствуют знаки безопасности на участке сварки', 'medium', 'Цех №1, сварочный участок', 3, '2024-02-28 00:00:00', 'completed'),
+(1, 'Истек срок поверки манометров на компрессоре', 'high', 'Цех №1, компрессорная', 3, '2024-02-20 00:00:00', 'completed'),
+(2, 'Загромождены проходы между стеллажами', 'medium', 'Склад, ряды 5-7', 4, '2024-03-17 00:00:00', 'in_progress'),
+(2, 'Нарушение условий хранения химических веществ', 'high', 'Склад, химический отсек', 4, '2024-03-15 00:00:00', 'completed'),
+(3, 'Просрочены огнетушители в кабинетах администрации', 'medium', 'Административный корпус, 2 этаж', 1, '2024-03-25 00:00:00', 'new');
+
+INSERT INTO incidents (title, incident_type, location, department_id, incident_date, reported_by, description, severity) VALUES
+('Падение с лестницы', 'Несчастный случай', 'Цех №1, монтажная площадка', 3, '2024-02-05 11:30:00', 3, 'Работник поскользнулся и упал с лестницы при подъеме на платформу', 'medium'),
+('Химический ожог руки', 'Микротравма', 'Цех №1, участок окраски', 3, '2024-02-20 14:15:00', 3, 'Работник получил химический ожог руки при обращении с растворителем', 'low'),
+('Короткое замыкание', 'Происшествие без травм', 'Серверная', 5, '2024-03-01 09:45:00', 7, 'Произошло короткое замыкание в распределительном щите, без пострадавших', 'medium');
+
+INSERT INTO incident_victims (incident_id, employee_id, injury_description, medical_assistance, work_days_lost) VALUES
+(1, 4, 'Ушиб голеностопного сустава, ссадины на руках', 'Амбулаторное лечение', 5),
+(2, 4, 'Химический ожог тыльной стороны правой кисти 1-й степени', 'Первая помощь, обращение в медпункт', 1);
+
+INSERT INTO safety_tasks (title, description, task_type, priority, status, assigned_to, assigned_by, department_id, start_date, deadline) VALUES
+('Обновление инструкций по ОТ', 'Актуализация инструкций по охране труда для всех должностей', 'Документация', 'high', 'in_progress', 2, 1, 2, '2024-03-01 00:00:00', '2024-04-30 00:00:00'),
+('Обучение по оказанию первой помощи', 'Организовать обучение сотрудников навыкам оказания первой помощи', 'Обучение', 'medium', 'new', 2, 1, NULL, '2024-04-01 00:00:00', '2024-05-15 00:00:00'),
+('Проверка состояния СИЗ', 'Проверить наличие и состояние СИЗ у всех сотрудников производственного цеха', 'Проверка', 'high', 'in_progress', 2, 3, 3, '2024-03-15 00:00:00', '2024-03-31 00:00:00'),
+('Установка новых информационных стендов', 'Разместить новые информационные стенды по охране труда', 'Улучшение', 'low', 'new', 2, 1, NULL, '2024-04-10 00:00:00', '2024-05-31 00:00:00'),
+('Проведение СОУТ', 'Организовать проведение специальной оценки условий труда', 'СОУТ', 'high', 'new', 2, 1, NULL, '2024-05-01 00:00:00', '2024-07-31 00:00:00');
+
+INSERT INTO workplace_assessments (department_id, workplace_name, assessment_date, next_assessment_date, assessor, result, hazard_class, report_number) VALUES
+(3, 'Рабочее место оператора станка', '2023-05-15', '2028-05-15', 'ООО "Аттестационный центр"', 'Соответствует', 3, 'СОУТ-2023-001'),
+(3, 'Рабочее место начальника цеха', '2023-05-15', '2028-05-15', 'ООО "Аттестационный центр"', 'Соответствует', 2, 'СОУТ-2023-002'),
+(4, 'Рабочее место кладовщика', '2023-05-16', '2028-05-16', 'ООО "Аттестационный центр"', 'Соответствует', 2, 'СОУТ-2023-003'),
+(5, 'Рабочее место системного администратора', '2023-05-16', '2028-05-16', 'ООО "Аттестационный центр"', 'Соответствует', 1, 'СОУТ-2023-004');
+
+INSERT INTO medical_examinations (employee_id, exam_date, next_exam_date, exam_type, medical_facility, result) VALUES
+(4, '2023-04-15', '2024-04-15', 'Периодический', 'ООО "Медицинский центр"', 'Годен без ограничений'),
+(5, '2023-05-25', '2024-05-25', 'Периодический', 'ООО "Медицинский центр"', 'Годен с ограничениями'),
+(3, '2023-03-05', '2024-03-05', 'Периодический', 'ООО "Медицинский центр"', 'Годен без ограничений'),
+(7, '2023-07-10', '2024-07-10', 'Периодический', 'ООО "Медицинский центр"', 'Годен без ограничений');
+
+INSERT INTO notifications (user_id, title, message, notification_type, related_entity_type, related_entity_id) VALUES
+(2, 'Приближается срок инструктажа', 'Необходимо провести повторный инструктаж в отделе ИТ до 25.03.2024', 'instruction', 'instructions', 5),
+(3, 'Новая задача', 'Вам назначена новая задача по установке ограждений', 'task', 'risk_mitigation_measures', 1),
+(4, 'Медицинский осмотр', 'Приближается срок прохождения медицинского осмотра', 'medical', 'medical_examinations', 1),
+(2, 'Выявлено нарушение', 'По результатам проверки выявлено нарушение требований ОТ', 'inspection', 'inspection_findings', 5),
+(7, 'Требуется обслуживание', 'Вилочный погрузчик требует технического обслуживания', 'equipment', 'equipment', 3);
+
+CREATE OR REPLACE VIEW view_ppe_requests AS
+SELECT 
+    pr.id,
+    pr.request_date,
+    pr.status,
+    e.id AS employee_id,
+    CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
+    d.name AS department,
+    pi.name AS ppe_item,
+    pi.category,
+    pr.quantity,
+    CONCAT(pu.first_name, ' ', pu.last_name) AS processed_by,
+    pr.processed_date,
+    pr.notes
+FROM 
+    ppe_requests pr
+JOIN employees e ON pr.employee_id = e.id
+JOIN users u ON e.user_id = u.id
+JOIN departments d ON e.department_id = d.id
+JOIN ppe_items pi ON pr.ppe_item_id = pi.id
+LEFT JOIN users pu ON pr.processed_by = pu.id;
+
+CREATE OR REPLACE VIEW view_ppe_issuance_history AS
+SELECT 
+    pi.id,
+    pi.issue_date,
+    CONCAT(e_u.first_name, ' ', e_u.last_name) AS employee_name,
+    d.name AS department,
+    p.name AS ppe_item,
+    pi.quantity,
+    pi.expected_return_date,
+    pi.actual_return_date,
+    CONCAT(i_u.first_name, ' ', i_u.last_name) AS issued_by,
+    CASE 
+        WHEN pi.actual_return_date IS NULL AND pi.expected_return_date < CURRENT_DATE THEN 'Просрочено'
+        WHEN pi.actual_return_date IS NULL THEN 'В использовании'
+        ELSE 'Возвращено'
+    END AS status
+FROM 
+    ppe_issuance pi
+JOIN employees e ON pi.employee_id = e.id
+JOIN users e_u ON e.user_id = e_u.id
+JOIN departments d ON e.department_id = d.id
+JOIN ppe_items p ON pi.ppe_item_id = p.id
+JOIN users i_u ON pi.issued_by = i_u.id;
+
+CREATE OR REPLACE VIEW view_instruction_summary AS
+SELECT 
+    i.id,
+    it.name AS instruction_type,
+    i.instruction_date,
+    i.next_instruction_date,
+    d.name AS department,
+    CONCAT(u.first_name, ' ', u.last_name) AS instructor,
+    COUNT(ip.id) AS participants_count,
+    i.location,
+    CASE 
+        WHEN i.next_instruction_date IS NOT NULL AND i.next_instruction_date < CURRENT_DATE THEN 'Просрочено'
+        WHEN i.next_instruction_date IS NOT NULL THEN 'Активно'
+        ELSE 'Завершено'
+    END AS status
+FROM 
+    instructions i
+JOIN instruction_types it ON i.instruction_type_id = it.id
+JOIN departments d ON i.department_id = d.id
+JOIN users u ON i.instructor_id = u.id
+LEFT JOIN instruction_participants ip ON i.id = ip.instruction_id
+GROUP BY 
+    i.id, it.name, i.instruction_date, i.next_instruction_date, d.name, u.first_name, u.last_name, i.location;
+
+CREATE OR REPLACE VIEW view_risk_monitoring AS
+SELECT 
+    r.id,
+    h.name AS hazard,
+    h.category,
+    d.name AS department,
+    r.location,
+    r.level,
+    r.probability,
+    r.severity,
+    (r.probability * r.severity) AS risk_score,
+    r.evaluation_date,
+    CONCAT(u.first_name, ' ', u.last_name) AS evaluated_by,
+    COUNT(rmm.id) AS mitigation_measures_count,
+    COUNT(CASE WHEN rmm.status = 'completed' THEN 1 END) AS completed_measures_count
+FROM 
+    risks r
+JOIN hazards h ON r.hazard_id = h.id
+JOIN departments d ON r.department_id = d.id
+JOIN users u ON r.evaluated_by = u.id
+LEFT JOIN risk_mitigation_measures rmm ON r.id = rmm.risk_id
+GROUP BY 
+    r.id, h.name, h.category, d.name, r.location, r.level, r.probability, r.severity, 
+    r.evaluation_date, u.first_name, u.last_name;
+
+CREATE OR REPLACE VIEW view_inspection_status AS
+SELECT 
+    i.id,
+    i.title,
+    i.inspection_type,
+    d.name AS department,
+    i.start_date,
+    i.end_date,
+    CONCAT(u.first_name, ' ', u.last_name) AS inspector,
+    i.status,
+    COUNT(if.id) AS findings_count,
+    COUNT(CASE WHEN if.status = 'completed' THEN 1 END) AS resolved_findings_count,
+    COUNT(CASE WHEN if.status != 'completed' AND if.deadline < CURRENT_DATE THEN 1 END) AS overdue_findings_count
+FROM 
+    inspections i
+JOIN departments d ON i.department_id = d.id
+JOIN users u ON i.lead_inspector_id = u.id
+LEFT JOIN inspection_findings if ON i.id = if.inspection_id
+GROUP BY 
+    i.id, i.title, i.inspection_type, d.name, i.start_date, i.end_date, u.first_name, u.last_name, i.status;
+
+CREATE OR REPLACE VIEW view_equipment_status AS
+SELECT 
+    e.id,
+    e.name,
+    e.equipment_type,
+    e.model,
+    e.serial_number,
+    d.name AS department,
+    e.location,
+    e.status,
+    e.last_maintenance_date,
+    e.next_maintenance_date,
+    CONCAT(u.first_name, ' ', u.last_name) AS responsible_person,
+    em.maintenance_date AS last_maintenance_record_date,
+    em.maintenance_type AS last_maintenance_type,
+    em.result AS last_maintenance_result,
+    CASE 
+        WHEN e.next_maintenance_date < CURRENT_DATE THEN 'Просрочено'
+        WHEN e.next_maintenance_date <= CURRENT_DATE + INTERVAL '30 day' THEN 'Скоро требуется'
+        ELSE 'В норме'
+    END AS maintenance_status
+FROM 
+    equipment e
+JOIN departments d ON e.department_id = d.id
+JOIN employees emp ON e.responsible_person_id = emp.id
+JOIN users u ON emp.user_id = u.id
+LEFT JOIN equipment_maintenance em ON e.id = em.equipment_id
+WHERE 
+    em.id = (
+        SELECT MAX(id) 
+        FROM equipment_maintenance 
+        WHERE equipment_id = e.id
+    ) OR em.id IS NULL;
+
+COMMIT;
+
+SELECT 
+    table_name, 
+    (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'workplace_safety' AND table_name = t.table_name) AS columns_count
+FROM 
+    (SELECT table_name FROM information_schema.tables WHERE table_schema = 'workplace_safety' AND table_type = 'BASE TABLE') t
+ORDER BY 
+    table_name;
+
+ 

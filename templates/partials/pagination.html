@@ -1,0 +1,29 @@
+{% if page.has_other_pages %}
+<div class="pagination">
+    <ul>
+        {% if page.has_previous %}
+            <li><a href="?page=1{{ query_params }}">&laquo; Первая</a></li>
+            <li><a href="?page={{ page.previous_page_number }}{{ query_params }}">&lsaquo; Предыдущая</a></li>
+        {% else %}
+            <li class="disabled"><span>&laquo; Первая</span></li>
+            <li class="disabled"><span>&lsaquo; Предыдущая</span></li>
+        {% endif %}
+        
+        {% for i in page.paginator.page_range %}
+            {% if page.number == i %}
+                <li class="active"><span>{{ i }}</span></li>
+            {% elif i > page.number|add:'-3' and i < page.number|add:'3' %}
+                <li><a href="?page={{ i }}{{ query_params }}">{{ i }}</a></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page.has_next %}
+            <li><a href="?page={{ page.next_page_number }}{{ query_params }}">Следующая &rsaquo;</a></li>
+            <li><a href="?page={{ page.paginator.num_pages }}{{ query_params }}">Последняя &raquo;</a></li>
+        {% else %}
+            <li class="disabled"><span>Следующая &rsaquo;</span></li>
+            <li class="disabled"><span>Последняя &raquo;</span></li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}

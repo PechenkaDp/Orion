@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Управление рисками | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Управление рисками</h1>
+    <div class="action-buttons">
+        <a href="{% url 'risk_create' %}" class="action-btn">Добавить риск</a>
+        <a href="{% url 'risk_assessment' %}" class="action-btn">Оценка рисков</a>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'risk_list' %}">
+        <div class="filter-group">
+            <label for="level">Уровень риска:</label>
+            <select name="level" id="level" class="form-control" onchange="this.form.submit()">
+                <option value="">Все уровни</option>
+                <option value="low" {% if level_filter == 'low' %}selected{% endif %}>Низкий</option>
+                <option value="medium" {% if level_filter == 'medium' %}selected{% endif %}>Средний</option>
+                <option value="high" {% if level_filter == 'high' %}selected{% endif %}>Высокий</option>
+                <option value="critical" {% if level_filter == 'critical' %}selected{% endif %}>Критический</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Опасность</th>
+                <th>Подразделение</th>
+                <th>Местоположение</th>
+                <th>Уровень</th>
+                <th>Оценка риска</th>
+                <th>Дата оценки</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for risk in page_obj %}
+            <tr>
+                <td>#{{ risk.id }}</td>
+                <td>{{ risk.hazard.name }}</td>
+                <td>{{ risk.department.name }}</td>
+                <td>{{ risk.location }}</td>
+                <td>
+                    <span class="status-badge {% if risk.level == 'low' %}status-low{% elif risk.level == 'medium' %}status-medium{% elif risk.level == 'high' %}status-high{% elif risk.level == 'critical' %}status-critical{% endif %}">
+                        {% if risk.level == 'low' %}Низкий{% elif risk.level == 'medium' %}Средний{% elif risk.level == 'high' %}Высокий{% elif risk.level == 'critical' %}Критический{% endif %}
+                    </span>
+                </td>
+                <td>{{ risk.risk_score }}</td>
+                <td>{{ risk.evaluation_date|date:"d.m.Y" }}</td>
+                <td>
+                    <a href="{% url 'risk_detail' risk.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'risk_update' risk.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                    <a href="{% url 'risk_delete' risk.id %}" class="icon-btn" title="Удалить"><span class="btn-icon">🗑️</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty-table">Риски не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'partials/pagination.html' with page=page_obj %}
+
+<style>
+    .status-low {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+    .status-medium {
+        background-color: #fff5e6;
+        color: #ff9800;
+    }
+    .status-high {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+    .status-critical {
+        background-color: #9c0006;
+        color: white;
+    }
+</style>
+{% endblock %}

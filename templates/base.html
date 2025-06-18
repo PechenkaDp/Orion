@@ -1,0 +1,222 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Орион - Безопасность опережающая время{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">О</div>
+            ОРИОН
+        </div>
+        <div class="search-box">
+            <form action="{% url 'search' %}" method="get">
+                <input type="text" name="q" class="search-input" placeholder="Поиск...">
+                <button type="submit" class="search-btn">🔍</button>
+            </form>
+        </div>
+        <div class="user-menu">
+            <a href="{% url 'notifications' %}" class="notification-badge" data-count="{{ notification_count|default:'0' }}">🔔</a>
+            <a href="{% url 'profile' %}">{{ user.last_name }} {{ user.first_name }}</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <ul class="sidebar-menu">
+                <li {% if request.path == '/dashboard/' %}class="active"{% endif %}>
+                    <a href="{% url 'dashboard' %}">
+                        <span class="menu-icon">📊</span>
+                        Главная
+                    </a>
+                </li>
+
+                {% if user.employee.role in 'admin,safety_specialist,department_head' %}
+                <li {% if 'ppe' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'ppe_list' %}">
+                        <span class="menu-icon">📋</span>
+                        Задачи СИЗ
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.employee.role in 'admin,safety_specialist,department_head' %}
+                <li {% if 'instructions' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'instruction_list' %}">
+                        <span class="menu-icon">📝</span>
+                        Инструктажи
+                    </a>
+                </li>
+                {% endif %}
+
+                <li {% if 'documents' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'document_list' %}">
+                        <span class="menu-icon">📚</span>
+                        Нормативные документы
+                    </a>
+                </li>
+
+                {% if user.employee.role in 'admin,safety_specialist,department_head' %}
+                <li {% if 'risks' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'risk_list' %}">
+                        <span class="menu-icon">⚠️</span>
+                        Управление рисками
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.employee.role in 'admin,safety_specialist,department_head' %}
+                <li {% if 'inspections' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'inspection_list' %}">
+                        <span class="menu-icon">🔍</span>
+                        Проверки
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.employee.role in 'admin,safety_specialist,department_head' %}
+                <li {% if 'reports' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'report_list' %}">
+                        <span class="menu-icon">📈</span>
+                        Отчеты
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.employee.role in 'admin,safety_specialist,department_head,medical_worker' %}
+                <li {% if 'employees' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'employee_list' %}">
+                        <span class="menu-icon">👥</span>
+                        Сотрудники
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.employee.role in 'admin,safety_specialist,department_head,technician' %}
+                <li {% if 'equipment' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'equipment_list' %}">
+                        <span class="menu-icon">🔧</span>
+                        Оборудование
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.employee.role == 'medical_worker' %}
+                <li {% if 'medical' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'medical_exam_list' %}">
+                        <span class="menu-icon">🏥</span>
+                        Медосмотры
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.employee.role == 'admin' %}
+                <li {% if 'settings' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'settings' %}">
+                        <span class="menu-icon">⚙️</span>
+                        Настройки
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.employee.role == 'admin' %}
+                <li>
+                    <a href="{% url 'admin:index' %}">
+                        <span class="menu-icon">🔐</span>
+                        Администрирование
+                    </a>
+                </li>
+                {% endif %}
+
+                <li {% if 'profile' in request.path %}class="active"{% endif %}>
+                    <a href="{% url 'profile' %}">
+                        <span class="menu-icon">👤</span>
+                        Профиль
+                    </a>
+                </li>
+
+                <li>
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
+                        {% csrf_token %}
+                    </form>
+                    <a href="javascript:void(0)" onclick="document.getElementById('logout-form').submit();">
+                        <span class="menu-icon">🚪</span>
+                        Выход
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="content-area">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+
+<script>
+    // Функция для получения CSRF-токена из cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Устанавливаем CSRF-токен для всех AJAX-запросов
+    document.addEventListener('DOMContentLoaded', function() {
+        // Получаем CSRF-токен
+        const csrftoken = getCookie('csrftoken');
+
+        // Автоматически добавляем CSRF-токен ко всем fetch-запросам
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+            const args = Array.from(arguments);
+
+            // Если запрос имеет заголовки и метод не GET/HEAD
+            if (args[1] && args[1].method && !['GET', 'HEAD'].includes(args[1].method.toUpperCase())) {
+                if (!args[1].headers) {
+                    args[1].headers = {};
+                }
+
+                // Если это объект Headers
+                if (args[1].headers instanceof Headers) {
+                    if (!args[1].headers.has('X-CSRFToken')) {
+                        args[1].headers.append('X-CSRFToken', csrftoken);
+                    }
+                } else {
+                    // Если это обычный объект
+                    if (!args[1].headers['X-CSRFToken']) {
+                        args[1].headers['X-CSRFToken'] = csrftoken;
+                    }
+                }
+            }
+
+            return originalFetch.apply(window, args);
+        };
+    });
+</script>

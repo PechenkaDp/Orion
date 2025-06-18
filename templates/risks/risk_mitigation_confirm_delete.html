@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Удаление мероприятия | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Удаление мероприятия по снижению риска</h1>
+</div>
+
+<div class="confirmation-container">
+    <div class="confirmation-box">
+        <h2>Подтверждение удаления</h2>
+        <p>Вы действительно хотите удалить мероприятие по снижению риска?</p>
+        <p><strong>{{ measure.description }}</strong></p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-buttons">
+                <button type="submit" class="action-btn btn-danger">Удалить</button>
+                <a href="{% url 'risk_detail' measure.risk.id %}" class="btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

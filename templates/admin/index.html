@@ -1,0 +1,64 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Панель администрирования системы "Орион"</h1>
+    <div class="dashboard-links">
+        <a href="{% url 'orion_admin:orion_dashboard' %}" class="dashboard-link">
+            <div class="dashboard-link-icon">📊</div>
+            <div class="dashboard-link-text">Панель мониторинга</div>
+        </a>
+        
+        <a href="{% url 'dashboard' %}" class="dashboard-link">
+            <div class="dashboard-link-icon">🏠</div>
+            <div class="dashboard-link-text">Вернуться на главную</div>
+        </a>
+    </div>
+</div>
+
+{{ block.super }}
+
+<style>
+    .dashboard-header {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .dashboard-header h1 {
+        margin: 0 0 15px 0;
+        font-size: 24px;
+        color: #333;
+    }
+    
+    .dashboard-links {
+        display: flex;
+        gap: 15px;
+    }
+    
+    .dashboard-link {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: #ff7a00;
+        color: white !important;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+    }
+    
+    .dashboard-link:hover {
+        background-color: #e56e00;
+    }
+    
+    .dashboard-link-icon {
+        font-size: 20px;
+        margin-right: 8px;
+    }
+    
+    .dashboard-link-text {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Заявка на СИЗ #{{ ppe_request.id }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Заявка на СИЗ #{{ ppe_request.id }}</h1>
+    <div class="action-buttons">
+        <a href="{% url 'ppe_update' ppe_request.id %}" class="action-btn">Редактировать</a>
+        <a href="{% url 'ppe_delete' ppe_request.id %}" class="action-btn btn-danger">Удалить</a>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Информация о заявке</h2>
+            <span class="status-badge {% if ppe_request.status == 'new' %}status-pending{% elif ppe_request.status == 'in_progress' %}status-pending{% elif ppe_request.status == 'completed' %}status-completed{% elif ppe_request.status == 'canceled' %}status-urgent{% endif %}">
+                {% if ppe_request.status == 'new' %}Новая{% elif ppe_request.status == 'in_progress' %}В обработке{% elif ppe_request.status == 'completed' %}Выполнено{% elif ppe_request.status == 'canceled' %}Отменено{% endif %}
+            </span>
+        </div>
+        
+        <div class="detail-content">
+            <div class="detail-row">
+                <div class="detail-label">Сотрудник:</div>
+                <div class="detail-value">{{ ppe_request.employee }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Подразделение:</div>
+                <div class="detail-value">{{ ppe_request.employee.department }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">СИЗ:</div>
+                <div class="detail-value">{{ ppe_request.ppe_item.name }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Категория:</div>
+                <div class="detail-value">{{ ppe_request.ppe_item.category }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Количество:</div>
+                <div class="detail-value">{{ ppe_request.quantity }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата заявки:</div>
+                <div class="detail-value">{{ ppe_request.request_date|date:"d.m.Y H:i" }}</div>
+            </div>
+            {% if ppe_request.processed_by %}
+            <div class="detail-row">
+                <div class="detail-label">Обработал:</div>
+                <div class="detail-value">{{ ppe_request.processed_by }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата обработки:</div>
+                <div class="detail-value">{{ ppe_request.processed_date|date:"d.m.Y H:i" }}</div>
+            </div>
+            {% endif %}
+            {% if ppe_request.notes %}
+            <div class="detail-row">
+                <div class="detail-label">Примечания:</div>
+                <div class="detail-value">{{ ppe_request.notes }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>История выдачи СИЗ</h2>
+        </div>
+        <div class="detail-content">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Дата выдачи</th>
+                        <th>СИЗ</th>
+                        <th>Количество</th>
+                        <th>Статус</th>
+                        <th>Выдал</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in issuance_history %}
+                    <tr>
+                        <td>{{ issue.issue_date|date:"d.m.Y" }}</td>
+                        <td>{{ issue.ppe_item.name }}</td>
+                        <td>{{ issue.quantity }}</td>
+                        <td>
+                            <span class="status-badge {% if not issue.actual_return_date and issue.expected_return_date < now %}status-urgent{% elif not issue.actual_return_date %}status-pending{% else %}status-completed{% endif %}">
+                                {% if not issue.actual_return_date and issue.expected_return_date < now %}Просрочено{% elif not issue.actual_return_date %}В использовании{% else %}Возвращено{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ issue.issued_by }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-table">История выдачи отсутствует</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if ppe_request.status == 'new' or ppe_request.status == 'in_progress' %}
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Обработка заявки</h2>
+        </div>
+        <div class="detail-content">
+            <form method="post" action="{% url 'ppe_process' ppe_request.id %}">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="status">Изменить статус</label>
+                        <select name="status" id="status" class="form-control">
+                            <option value="in_progress" {% if ppe_request.status == 'in_progress' %}selected{% endif %}>В обработке</option>
+                            <option value="completed" {% if ppe_request.status == 'completed' %}selected{% endif %}>Выполнено</option>
+                            <option value="canceled" {% if ppe_request.status == 'canceled' %}selected{% endif %}>Отменено</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Примечания</label>
+                    <textarea name="notes" id="notes" class="form-control" rows="3">{{ ppe_request.notes }}</textarea>
+                </div>
+                <button type="submit" class="action-btn">Сохранить</button>
+                <a href="{% url 'ppe_issue' ppe_request.id %}" class="action-btn">Выдать СИЗ</a>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

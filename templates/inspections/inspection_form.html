@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Название</label>
+            {{ form.title }}
+        </div>
+        
+        <div class="form-group">
+            <label>Тип проверки</label>
+            {{ form.inspection_type }}
+        </div>
+        
+        <div class="form-group">
+            <label>Подразделение</label>
+            {{ form.department }}
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label>Дата начала</label>
+                {{ form.start_date }}
+            </div>
+            <div class="form-group col-md-6">
+                <label>Дата окончания</label>
+                {{ form.end_date }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Статус</label>
+            {{ form.status }}
+        </div>
+        
+        <div class="form-group">
+            <label>Описание</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

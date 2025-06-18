@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Результаты тестирования | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Результаты тестирования</h1>
+    <div class="action-buttons">
+        <a href="{% url 'dashboard' %}" class="btn-secondary">На главную</a>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'instruction_test_results_list' %}">
+        <div class="filter-group">
+            <label for="employee">Сотрудник:</label>
+            <select name="employee" id="employee" class="form-control" onchange="this.form.submit()">
+                <option value="">Все сотрудники</option>
+                {% for result in page_obj %}
+                {% if result.employee.id not in seen_employees %}
+                <option value="{{ result.employee.id }}" {% if employee_filter == result.employee.id|stringformat:"i" %}selected{% endif %}>
+                    {{ result.employee.user.last_name }} {{ result.employee.user.first_name }}
+                </option>
+                {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="test">Тест:</label>
+            <select name="test" id="test" class="form-control" onchange="this.form.submit()">
+                <option value="">Все тесты</option>
+                {% for result in page_obj %}
+                {% if result.test.id not in seen_tests %}
+                <option value="{{ result.test.id }}" {% if test_filter == result.test.id|stringformat:"i" %}selected{% endif %}>
+                    {{ result.test.title }}
+                </option>
+                {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="passed">Статус:</label>
+            <select name="passed" id="passed" class="form-control" onchange="this.form.submit()">
+                <option value="">Все статусы</option>
+                <option value="1" {% if passed_filter == '1' %}selected{% endif %}>Пройден</option>
+                <option value="0" {% if passed_filter == '0' %}selected{% endif %}>Не пройден</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-title">Всего результатов</div>
+        <div class="stat-value">{{ page_obj.paginator.count }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-title">Успешно пройдено</div>
+        <div class="stat-value passed">{{ passed_count }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-title">Не пройдено</div>
+        <div class="stat-value failed">{{ failed_count }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-title">Средний результат</div>
+        <div class="stat-value">{{ avg_score|floatformat:1 }}%</div>
+    </div>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Сотрудник</th>
+                <th>Инструктаж</th>
+                <th>Тест</th>
+                <th>Результат</th>
+                <th>Статус</th>
+                <th>Проверен</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in page_obj %}
+            <tr>
+                <td>{{ result.start_time|date:"d.m.Y H:i" }}</td>
+                <td>{{ result.employee.user.last_name }} {{ result.employee.user.first_name }}</td>
+                <td>{{ result.test.instruction.instruction_type.name }}</td>
+                <td>{{ result.test.title }}</td>
+                <td>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ result.score_percent }}%; 
+                            background-color: {% if result.passed %}#4caf50{% else %}#f44336{% endif %};">
+                        </div>
+                        <span class="progress-text">{{ result.score_percent|floatformat:0 }}%</span>
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge {% if result.passed %}status-passed{% else %}status-failed{% endif %}">
+                        {% if result.passed %}Пройден{% else %}Не пройден{% endif %}
+                    </span>
+                </td>
+                <td>
+                    {% if result.reviewed %}
+                    <span class="status-badge status-reviewed">Проверен</span>
+                    {% else %}
+                    <span class="status-badge status-pending">Не проверен</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'instruction_test_result' result.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'instruction_review_test_result' result.id %}" class="icon-btn" title="Проверить"><span class="btn-icon">✓</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty-table">Результаты не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'partials/pagination.html' with page=page_obj %}
+
+<style>
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .stat-title {
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .stat-value.passed {
+        color: #4caf50;
+    }
+    
+    .stat-value.failed {
+        color: #f44336;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .progress {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #333;
+        font-weight: bold;
+        font-size: 12px;
+    }
+    
+    .status-passed {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+    
+    .status-failed {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+    
+    .status-reviewed {
+        background-color: #e3f2fd;
+        color: #2196f3;
+    }
+    
+    .status-pending {
+        background-color: #fff8e1;
+        color: #ff9800;
+    }
+    
+    @media (max-width: 768px) {
+        .stats-cards {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+    }
+</style>
+{% endblock %}

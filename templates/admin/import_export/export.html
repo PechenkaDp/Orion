@@ -1,0 +1,53 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% load admin_urls %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a> &rsaquo;
+  <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a> &rsaquo;
+  <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+  {% trans 'Экспорт' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Экспорт данных</h1>
+
+<div class="help-text" style="margin-bottom: 20px;">
+  <p>Выберите формат для экспорта данных. Вы можете фильтровать и выбирать поля для экспорта.</p>
+</div>
+
+<form method="post" id="exportForm">
+  {% csrf_token %}
+
+  <fieldset class="module aligned">
+    {% for field in form %}
+      <div class="form-row">
+        <div{% if field.errors %} class="errors"{% endif %}>
+          {% if field.errors %}{{ field.errors }}{% endif %}
+          <label class="required" for="id_{{ field.name }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}
+          <div class="help">{{ field.help_text|safe }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </fieldset>
+
+
+  <div class="submit-row">
+    <input type="submit" class="default" value="{% trans "Экспортировать" %}">
+  </div>
+</form>
+
+<div class="additional-info" style="margin-top: 20px; padding: 15px; background-color: #f8f8f8; border-radius: 4px;">
+  <h2 style="margin-top: 0;">Доступные форматы</h2>
+  <ul>
+    <li><strong>CSV</strong> - универсальный формат, который можно открыть в Excel, Google Sheets или текстовом редакторе</li>
+    <li><strong>XLSX</strong> - формат Microsoft Excel для использования в офисных приложениях</li>
+    <li><strong>JSON</strong> - для интеграции с другими системами или обработки данных программно</li>
+  </ul>
+</div>
+{% endblock %}

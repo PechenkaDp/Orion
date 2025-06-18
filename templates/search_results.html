@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Результаты поиска | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Результаты поиска: "{{ query }}"</h1>
+</div>
+
+<div class="search-results">
+    {% if query %}
+        {% if documents or ppe_requests or instructions or risks or inspections or employees or equipment %}
+            {% if documents %}
+                <h2>Документы</h2>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Тип</th>
+                                <th>Дата публикации</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for document in documents %}
+                            <tr>
+                                <td>{{ document.title }}</td>
+                                <td>{{ document.document_type }}</td>
+                                <td>{{ document.publish_date|date:"d.m.Y" }}</td>
+                                <td><a href="{% url 'document_detail' document.id %}" class="action-btn">Просмотр</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            {% if ppe_requests %}
+                <h2>Заявки на СИЗ</h2>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Сотрудник</th>
+                                <th>СИЗ</th>
+                                <th>Дата заявки</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in ppe_requests %}
+                            <tr>
+                                <td>{{ request.employee }}</td>
+                                <td>{{ request.ppe_item.name }}</td>
+                                <td>{{ request.request_date|date:"d.m.Y" }}</td>
+                                <td><a href="{% url 'ppe_detail' request.id %}" class="action-btn">Просмотр</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            <!-- Аналогичные блоки для других типов данных -->
+            
+        {% else %}
+            <div class="empty-search">
+                <p>По вашему запросу ничего не найдено. Попробуйте изменить запрос.</p>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-search">
+            <p>Введите запрос в строку поиска.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

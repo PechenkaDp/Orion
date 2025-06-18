@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оборудование | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Оборудование</h1>
+    <button class="action-btn" onclick="location.href='{% url 'equipment_create' %}'">Добавить оборудование</button>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'equipment_list' %}">
+        <div class="filter-group">
+            <label for="status">Статус:</label>
+            <select name="status" id="status" class="form-control" onchange="this.form.submit()">
+                <option value="">Все статусы</option>
+                <option value="operational" {% if status_filter == 'operational' %}selected{% endif %}>Исправно</option>
+                <option value="requires_maintenance" {% if status_filter == 'requires_maintenance' %}selected{% endif %}>Требуется обслуживание</option>
+                <option value="under_maintenance" {% if status_filter == 'under_maintenance' %}selected{% endif %}>На обслуживании</option>
+                <option value="decommissioned" {% if status_filter == 'decommissioned' %}selected{% endif %}>Выведено из эксплуатации</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Тип</th>
+                <th>Местоположение</th>
+                <th>Серийный номер</th>
+                <th>Статус</th>
+                <th>Следующее ТО</th>
+                <th>Ответственный</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in page_obj %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.equipment_type }}</td>
+                <td>{{ item.location }}</td>
+                <td>{{ item.serial_number }}</td>
+                <td>
+                    <span class="status-badge {% if item.status == 'operational' %}status-operational{% elif item.status == 'requires_maintenance' %}status-requires{% elif item.status == 'under_maintenance' %}status-under{% elif item.status == 'decommissioned' %}status-decommissioned{% endif %}">
+                        {% if item.status == 'operational' %}Исправно{% elif item.status == 'requires_maintenance' %}Требуется ТО{% elif item.status == 'under_maintenance' %}На обслуживании{% elif item.status == 'decommissioned' %}Выведено из экспл.{% endif %}
+                    </span>
+                </td>
+                <td>
+                    {{ item.next_maintenance_date|date:"d.m.Y"|default:"Не указано" }}
+                    {% if item.next_maintenance_date and item.next_maintenance_date < current_date %}
+                    <span class="status-badge status-urgent">Просрочено</span>
+                    {% endif %}
+                </td>
+                <td>{{ item.responsible_person }}</td>
+                <td>
+                    <a href="{% url 'equipment_detail' item.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'equipment_update' item.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                    <a href="{% url 'equipment_maintenance' item.id %}" class="icon-btn" title="Обслуживание"><span class="btn-icon">🔧</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty-table">Оборудование не найдено</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'partials/pagination.html' with page=page_obj %}
+
+<style>
+    .status-operational {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+    .status-requires {
+        background-color: #fff5e6;
+        color: #ff9800;
+    }
+    .status-under {
+        background-color: #e6f4ff;
+        color: #2196f3;
+    }
+    .status-decommissioned {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+</style>
+{% endblock %}

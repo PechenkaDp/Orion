@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оборудование: {{ equipment.name }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ equipment.name }}</h1>
+    <div class="action-buttons">
+        <a href="{% url 'equipment_update' equipment.id %}" class="action-btn">Редактировать</a>
+        <a href="{% url 'equipment_maintenance' equipment.id %}" class="action-btn">Обслуживание</a>
+        <a href="{% url 'equipment_delete' equipment.id %}" class="action-btn btn-danger">Удалить</a>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Информация об оборудовании</h2>
+            <span class="status-badge {% if equipment.status == 'operational' %}status-operational{% elif equipment.status == 'requires_maintenance' %}status-requires{% elif equipment.status == 'under_maintenance' %}status-under{% elif equipment.status == 'decommissioned' %}status-decommissioned{% endif %}">
+                {% if equipment.status == 'operational' %}Исправно{% elif equipment.status == 'requires_maintenance' %}Требуется ТО{% elif equipment.status == 'under_maintenance' %}На обслуживании{% elif equipment.status == 'decommissioned' %}Выведено из эксплуатации{% endif %}
+            </span>
+        </div>
+        
+        <div class="detail-content">
+            <div class="detail-row">
+                <div class="detail-label">Название:</div>
+                <div class="detail-value">{{ equipment.name }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Тип оборудования:</div>
+                <div class="detail-value">{{ equipment.equipment_type }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Модель:</div>
+                <div class="detail-value">{{ equipment.model|default:"Не указана" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Серийный номер:</div>
+                <div class="detail-value">{{ equipment.serial_number|default:"Не указан" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Производитель:</div>
+                <div class="detail-value">{{ equipment.manufacturer|default:"Не указан" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата приобретения:</div>
+                <div class="detail-value">{{ equipment.purchase_date|date:"d.m.Y"|default:"Не указана" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Окончание гарантии:</div>
+                <div class="detail-value">{{ equipment.warranty_expiry_date|date:"d.m.Y"|default:"Не указана" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Подразделение:</div>
+                <div class="detail-value">{{ equipment.department.name|default:"Не указано" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Местоположение:</div>
+                <div class="detail-value">{{ equipment.location|default:"Не указано" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Ответственное лицо:</div>
+                <div class="detail-value">{{ equipment.responsible_person|default:"Не назначено" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Последнее ТО:</div>
+                <div class="detail-value">{{ equipment.last_maintenance_date|date:"d.m.Y"|default:"Не проводилось" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Следующее ТО:</div>
+                <div class="detail-value {% if equipment.next_maintenance_date and equipment.next_maintenance_date < current_date %}overdue{% endif %}">
+                    {{ equipment.next_maintenance_date|date:"d.m.Y"|default:"Не запланировано" }}
+                    {% if equipment.next_maintenance_date and equipment.next_maintenance_date < current_date %}
+                    <span class="status-badge status-urgent">Просрочено</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if equipment.notes %}
+            <div class="detail-row">
+                <div class="detail-label">Примечания:</div>
+                <div class="detail-value">{{ equipment.notes }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>История обслуживания</h2>
+            <a href="{% url 'equipment_maintenance' equipment.id %}" class="action-btn">Новая запись</a>
+        </div>
+        <div class="detail-content">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Тип обслуживания</th>
+                        <th>Выполнил</th>
+                        <th>Результат</th>
+                        <th>Следующее ТО</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for maintenance in maintenance_history %}
+                    <tr>
+                        <td>{{ maintenance.maintenance_date|date:"d.m.Y" }}</td>
+                        <td>{{ maintenance.maintenance_type }}</td>
+                        <td>{{ maintenance.performed_by.last_name }} {{ maintenance.performed_by.first_name }}</td>
+                        <td>{{ maintenance.result }}</td>
+                        <td>{{ maintenance.next_maintenance_date|date:"d.m.Y"|default:"Не запланировано" }}</td>
+                        <td>
+                            <a href="{% url 'maintenance_detail' maintenance.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                            <a href="{% url 'maintenance_update' maintenance.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty-table">История обслуживания отсутствует</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>График обслуживания</h2>
+        </div>
+        <div class="detail-content">
+            <div class="chart-container">
+                <canvas id="maintenanceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .status-operational {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+    .status-requires {
+        background-color: #fff5e6;
+        color: #ff9800;
+    }
+    .status-under {
+        background-color: #e6f4ff;
+        color: #2196f3;
+    }
+    .status-decommissioned {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+    
+    .overdue {
+        color: #f44336;
+        font-weight: bold;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Данные для графика (заглушка, в реальной системе будут передаваться из view)
+        var maintenanceData = {
+            labels: [{% for m in maintenance_history %}'{{ m.maintenance_date|date:"d.m.Y" }}',{% endfor %}],
+            datasets: [{
+                label: 'Техническое обслуживание',
+                data: [{% for m in maintenance_history %}1,{% endfor %}],
+                backgroundColor: '#ff7a00',
+                borderColor: '#ff7a00',
+                borderWidth: 1
+            }]
+        };
+
+        var ctx = document.getElementById('maintenanceChart').getContext('2d');
+        var maintenanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: maintenanceData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 2,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

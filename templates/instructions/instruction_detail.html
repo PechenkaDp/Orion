@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Инструктаж: {{ instruction.instruction_type.name }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Инструктаж: {{ instruction.instruction_type.name }}</h1>
+    <div class="action-buttons">
+        <a href="{% url 'instruction_update' instruction.id %}" class="action-btn">Редактировать</a>
+        {% if not materials %}
+        <a href="{% url 'instruction_add_materials' instruction.id %}" class="action-btn">Добавить материалы</a>
+        {% endif %}
+        {% if materials and not has_test %}
+        <a href="{% url 'instruction_add_test' instruction.id %}" class="action-btn">Добавить тест</a>
+        {% endif %}
+        <a href="{% url 'instruction_delete' instruction.id %}" class="action-btn btn-danger">Удалить</a>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Информация об инструктаже</h2>
+            {% if instruction.next_instruction_date and instruction.next_instruction_date < current_date %}
+            <span class="status-badge status-urgent">Просрочен</span>
+            {% endif %}
+        </div>
+
+        <div class="detail-content">
+            <div class="detail-row">
+                <div class="detail-label">Тип инструктажа:</div>
+                <div class="detail-value">{{ instruction.instruction_type.name }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Подразделение:</div>
+                <div class="detail-value">{{ instruction.department.name }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата проведения:</div>
+                <div class="detail-value">{{ instruction.instruction_date|date:"d.m.Y H:i" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Дата следующего инструктажа:</div>
+                <div class="detail-value {% if instruction.next_instruction_date and instruction.next_instruction_date < current_date %}overdue{% endif %}">
+                    {{ instruction.next_instruction_date|date:"d.m.Y"|default:"Не установлена" }}
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Инструктор:</div>
+                <div class="detail-value">{{ instruction.instructor.last_name }} {{ instruction.instructor.first_name }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Место проведения:</div>
+                <div class="detail-value">{{ instruction.location|default:"Не указано" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Продолжительность:</div>
+                <div class="detail-value">{{ instruction.duration|default:"0" }} мин.</div>
+            </div>
+            {% if instruction.notes %}
+            <div class="detail-row">
+                <div class="detail-label">Примечания:</div>
+                <div class="detail-value">{{ instruction.notes }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if materials %}
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Учебные материалы</h2>
+            <a href="{% url 'instruction_add_materials' instruction.id %}" class="action-btn">Добавить материал</a>
+        </div>
+        <div class="detail-content">
+            {% if materials %}
+            <div class="materials-list">
+                {% for material in materials %}
+                <div class="material-item">
+                    <div class="material-icon">
+                        {% if material.file %}📄{% else %}📋{% endif %}
+                    </div>
+                    <div class="material-content">
+                        <h3>{{ material.title }}</h3>
+                        <p>{{ material.content|truncatechars:100 }}</p>
+                        {% if material.file %}
+                        <a href="{{ material.file.url }}" target="_blank" class="file-link">Скачать файл</a>
+                        {% endif %}
+                    </div>
+                    <div class="material-order">{{ material.order }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-detail">Учебные материалы не добавлены.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if has_test %}
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Тестирование</h2>
+            <span class="status-badge {% if test.is_active %}status-active{% else %}status-inactive{% endif %}">
+                {% if test.is_active %}Активен{% else %}Неактивен{% endif %}
+            </span>
+        </div>
+        <div class="detail-content">
+            <div class="test-info">
+                <h3>{{ test.title }}</h3>
+                {% if test.description %}
+                <p>{{ test.description }}</p>
+                {% endif %}
+
+                <div class="test-params">
+                    <div class="param-item">
+                        <span class="param-label">Проходной балл:</span>
+                        <span class="param-value">{{ test.passing_score }}%</span>
+                    </div>
+                    {% if test.time_limit > 0 %}
+                    <div class="param-item">
+                        <span class="param-label">Ограничение времени:</span>
+                        <span class="param-value">{{ test.time_limit }} мин.</span>
+                    </div>
+                    {% endif %}
+                    <div class="param-item">
+                        <span class="param-label">Вопросов:</span>
+                        <span class="param-value">{{ test.questions.count }}</span>
+                    </div>
+                </div>
+
+                {% if test_results %}
+                <div class="test-results-summary">
+                    <h4>Результаты тестирования</h4>
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">{{ test_results.count }}</span>
+                            <span class="stat-label">Всего попыток</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value passed">{{ passed_count }}</span>
+                            <span class="stat-label">Пройдено</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value failed">{{ failed_count }}</span>
+                            <span class="stat-label">Не пройдено</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ avg_score|floatformat:1 }}%</span>
+                            <span class="stat-label">Средний балл</span>
+                        </div>
+                    </div>
+
+                    <div class="results-actions">
+                        <a href="{% url 'instruction_test_results_list' %}?test={{ test.id }}" class="action-btn">Просмотреть все результаты</a>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-detail">Пока нет результатов тестирования.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Участники инструктажа</h2>
+        </div>
+        <div class="detail-content">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Сотрудник</th>
+                        <th>Должность</th>
+                        <th>Подразделение</th>
+                        <th>Статус</th>
+                        <th>Результат теста</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for participant in participants %}
+                    <tr>
+                        <td>{{ participant.employee.user.last_name }} {{ participant.employee.user.first_name }}</td>
+                        <td>{{ participant.employee.position }}</td>
+                        <td>{{ participant.employee.department.name }}</td>
+                        <td>
+                            <span class="status-badge
+                                {% if participant.status == 'attended' or participant.status == 'completed' %}status-completed
+                                {% elif participant.status == 'failed' %}status-failed
+                                {% else %}status-pending{% endif %}">
+                                {% if participant.status == 'attended' %}Присутствовал
+                                {% elif participant.status == 'completed' %}Пройден
+                                {% elif participant.status == 'failed' %}Не пройден
+                                {% elif participant.status == 'assigned' %}Назначен
+                                {% else %}{{ participant.status }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if participant.test_result %}
+                            {{ participant.test_result }}%
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'employee_detail' participant.employee.id %}" class="icon-btn" title="Профиль сотрудника">
+                                <span class="btn-icon">👤</span>
+                            </a>
+
+                            {% if has_test %}
+                            {% for result in test_results %}
+                            {% if result.employee == participant.employee %}
+                            <a href="{% url 'instruction_test_result' result.id %}" class="icon-btn" title="Результат теста">
+                                <span class="btn-icon">📊</span>
+                            </a>
+                            {% endif %}
+                            {% endfor %}
+                            {% endif %}
+
+                            {% if is_participant and participant.employee == request.user.employee %}
+                            <a href="{% url 'instruction_study' instruction.id %}" class="icon-btn" title="Пройти обучение">
+                                <span class="btn-icon">📚</span>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty-table">Участники не найдены</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .overdue {
+        color: #f44336;
+        font-weight: bold;
+    }
+
+    .materials-list {
+        margin-top: 20px;
+    }
+
+    .material-item {
+        display: flex;
+        align-items: center;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+
+    .material-icon {
+        font-size: 24px;
+        margin-right: 15px;
+        color: #ff7a00;
+    }
+
+    .material-content {
+        flex: 1;
+    }
+
+    .material-content h3 {
+        margin: 0 0 5px 0;
+    }
+
+    .material-content p {
+        margin: 0 0 5px 0;
+        color: #666;
+    }
+
+    .file-link {
+        color: #2196f3;
+        text-decoration: none;
+    }
+
+    .material-order {
+        width: 30px;
+        height: 30px;
+        background-color: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    .test-info {
+        margin-top: 15px;
+    }
+
+    .test-info h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+
+    .test-params {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 15px;
+        margin-bottom: 20px;
+    }
+
+    .param-item {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 10px 15px;
+    }
+
+    .param-label {
+        font-weight: bold;
+        color: #666;
+        margin-right: 5px;
+    }
+
+    .test-results-summary {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+
+    .test-results-summary h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+
+    .summary-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: white;
+        border-radius: 8px;
+        padding: 10px;
+        min-width: 100px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .stat-value.passed {
+        color: #4caf50;
+    }
+
+    .stat-value.failed {
+        color: #f44336;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .results-actions {
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .status-active {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+
+    .status-inactive {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+
+    .status-completed {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+
+    .status-failed {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+
+    .status-pending {
+        background-color: #fff8e1;
+        color: #ff9800;
+    }
+
+    .status-urgent {
+        background-color: #f44336;
+        color: white;
+    }
+
+    .empty-detail {
+        color: #999;
+        font-style: italic;
+        text-align: center;
+        padding: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .test-params {
+            flex-direction: column;
+        }
+
+        .summary-stats {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

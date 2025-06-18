@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Нормативные документы | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Нормативные документы</h1>
+    <button class="action-btn" onclick="location.href='{% url 'document_create' %}'">Добавить документ</button>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'document_list' %}">
+        <div class="filter-group">
+            <label for="type">Тип документа:</label>
+            <select name="type" id="type" class="form-control" onchange="this.form.submit()">
+                <option value="">Все документы</option>
+                {% for doc_type in document_types %}
+                <option value="{{ doc_type }}" {% if document_type == doc_type %}selected{% endif %}>{{ doc_type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="is_active">Статус:</label>
+            <select name="is_active" id="is_active" class="form-control" onchange="this.form.submit()">
+                <option value="">Все статусы</option>
+                <option value="1" {% if is_active_filter == '1' %}selected{% endif %}>Активные</option>
+                <option value="0" {% if is_active_filter == '0' %}selected{% endif %}>Неактивные</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Тип документа</th>
+                <th>Дата публикации</th>
+                <th>Действует до</th>
+                <th>Версия</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for document in page_obj %}
+            <tr>
+                <td>{{ document.title }}</td>
+                <td>{{ document.document_type }}</td>
+                <td>{{ document.publish_date|date:"d.m.Y"|default:"-" }}</td>
+                <td>
+                    {{ document.expiry_date|date:"d.m.Y"|default:"Бессрочно" }}
+                    {% if document.expiry_date and document.expiry_date < current_date %}
+                    <span class="status-badge status-urgent">Просрочен</span>
+                    {% endif %}
+                </td>
+                <td>{{ document.version|default:"-" }}</td>
+                <td>
+                    <span class="status-badge {% if document.is_active %}status-completed{% else %}status-urgent{% endif %}">
+                        {% if document.is_active %}Активен{% else %}Неактивен{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'document_detail' document.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'document_update' document.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                    <a href="{% url 'document_delete' document.id %}" class="icon-btn" title="Удалить"><span class="btn-icon">🗑️</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="empty-table">Документы не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'partials/pagination.html' with page=page_obj %}
+
+<div class="section-title">Статистика документов</div>
+
+<div class="dashboard-grid">
+    <div class="dashboard-card">
+        <div class="card-header">
+            <div class="card-icon">📊</div>
+            Документы по типам
+        </div>
+        <div class="chart-container">
+            <canvas id="documentTypesChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="dashboard-card">
+        <div class="card-header">
+            <div class="card-icon">📅</div>
+            Документы по годам публикации
+        </div>
+        <div class="chart-container">
+            <canvas id="documentDatesChart"></canvas>
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="card-header">
+            <div class="card-icon">📄</div>
+            Недавно обновленные
+        </div>
+        <div class="detail-content">
+            <ul class="dashboard-list">
+                {% for doc in recent_documents %}
+                <li>
+                    <a href="{% url 'document_detail' doc.id %}">
+                        {{ doc.title }}
+                        <span class="list-date">{{ doc.updated_at|date:"d.m.Y" }}</span>
+                    </a>
+                </li>
+                {% empty %}
+                <li>Нет недавно обновленных документов</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Данные для графика по типам документов
+        var documentTypesLabels = {{ document_types_labels|safe }};
+        var documentTypesCounts = {{ document_types_counts|safe }};
+
+        var ctx1 = document.getElementById('documentTypesChart').getContext('2d');
+        var documentTypesChart = new Chart(ctx1, {
+            type: 'pie',
+            data: {
+                labels: documentTypesLabels,
+                datasets: [{
+                    data: documentTypesCounts,
+                    backgroundColor: [
+                        '#4caf50', '#ff9800', '#2196f3', '#f44336', '#9c27b0', '#e91e63', '#607d8b', '#009688'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+
+        // Данные для графика по годам публикации
+        var documentYearsLabels = {{ document_years_labels|safe }};
+        var documentYearsCounts = {{ document_years_counts|safe }};
+
+        var ctx2 = document.getElementById('documentDatesChart').getContext('2d');
+        var documentDatesChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: documentYearsLabels,
+                datasets: [{
+                    label: 'Количество документов',
+                    data: documentYearsCounts,
+                    backgroundColor: '#ff7a00'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Название</label>
+            {{ form.title }}
+        </div>
+        
+        <div class="form-group">
+            <label>Тип документа</label>
+            {{ form.document_type }}
+        </div>
+        
+        <div class="form-group">
+            <label>Файл</label>
+            {{ form.file }}
+            {% if document and document.file %}
+            <p class="form-help">Текущий файл: <a href="{{ document.file.url }}" target="_blank">{{ document.file.name }}</a></p>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label>Описание</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label>Дата публикации</label>
+                {{ form.publish_date }}
+            </div>
+            <div class="form-group col-md-4">
+                <label>Дата вступления в силу</label>
+                {{ form.effective_date }}
+            </div>
+            <div class="form-group col-md-4">
+                <label>Дата окончания действия</label>
+                {{ form.expiry_date }}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label>Версия</label>
+                {{ form.version }}
+            </div>
+            <div class="form-group col-md-6">
+                <label>Автор</label>
+                {{ form.author }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Активен</label>
+            {{ form.is_active }}
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

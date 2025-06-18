@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Прохождение теста | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Тест: {{ test.title }}</h1>
+    <div class="action-buttons">
+        <a href="{% url 'instruction_study' instruction.id %}" class="btn-secondary">Вернуться к материалам</a>
+    </div>
+</div>
+
+<div class="test-container">
+    <div class="test-info-block">
+        <div class="test-header">
+            <h2>{{ instruction.instruction_type.name }}</h2>
+            {% if time_limit > 0 %}
+            <div class="timer" id="test-timer">
+                <div class="time-remaining">
+                    <span id="minutes">{{ time_limit }}</span>:<span id="seconds">00</span>
+                </div>
+                <div class="timer-label">Оставшееся время</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="test-params">
+            <div class="param-item">
+                <span class="param-label">Проходной балл:</span>
+                <span class="param-value">{{ test.passing_score }}%</span>
+            </div>
+            <div class="param-item">
+                <span class="param-label">Вопросов:</span>
+                <span class="param-value">{{ form.fields|length }}</span>
+            </div>
+            {% if time_limit > 0 %}
+            <div class="param-item">
+                <span class="param-label">Ограничение времени:</span>
+                <span class="param-value">{{ time_limit }} мин.</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <form method="post" id="test-form">
+        {% csrf_token %}
+        
+        <div class="questions-list">
+            {% for field in form %}
+            <div class="question-card">
+                <div class="question-number">Вопрос {{ forloop.counter }}</div>
+                <div class="question-text">{{ field.label }}</div>
+                
+                <div class="answers-list">
+                    {{ field }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="test-actions">
+            <button type="submit" class="action-btn btn-primary">Завершить тест</button>
+            <a href="{% url 'instruction_study' instruction.id %}" class="btn-secondary">Отменить</a>
+        </div>
+    </form>
+</div>
+
+{% if time_limit > 0 %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set the duration in minutes
+        let duration = {{ time_limit }};
+        let totalSeconds = duration * 60;
+        
+        const minutesElement = document.getElementById('minutes');
+        const secondsElement = document.getElementById('seconds');
+        const timerElement = document.getElementById('test-timer');
+        const testForm = document.getElementById('test-form');
+        
+        // Update the timer every second
+        const timerInterval = setInterval(function() {
+            totalSeconds--;
+            
+            if (totalSeconds <= 0) {
+                clearInterval(timerInterval);
+                // Time's up, submit the form
+                alert('Время истекло! Форма будет автоматически отправлена.');
+                testForm.submit();
+                return;
+            }
+            
+            // Update the timer display
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            
+            minutesElement.textContent = minutes.toString().padStart(2, '0');
+            secondsElement.textContent = seconds.toString().padStart(2, '0');
+            
+            // Change timer color when time is running out
+            if (totalSeconds <= 60) {
+                timerElement.classList.add('timer-warning');
+            }
+            if (totalSeconds <= 30) {
+                timerElement.classList.remove('timer-warning');
+                timerElement.classList.add('timer-danger');
+            }
+        }, 1000);
+        
+        // Make sure the timer stops if the form is submitted
+        testForm.addEventListener('submit', function() {
+            clearInterval(timerInterval);
+        });
+    });
+</script>
+{% endif %}
+
+<style>
+    .test-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .test-info-block {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .test-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .test-header h2 {
+        margin: 0;
+        color: #ff7a00;
+    }
+    
+    .timer {
+        background-color: #f0f0f0;
+        border-radius: 8px;
+        padding: 10px 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: background-color 0.3s;
+    }
+    
+    .time-remaining {
+        font-size: 20px;
+        font-weight: bold;
+    }
+    
+    .timer-label {
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .timer-warning {
+        background-color: #fff8e1;
+        color: #ff9800;
+    }
+    
+    .timer-danger {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+    
+    .test-params {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .param-item {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 10px 15px;
+    }
+    
+    .param-label {
+        font-weight: bold;
+        color: #666;
+        margin-right: 5px;
+    }
+    
+    .questions-list {
+        margin-bottom: 30px;
+    }
+    
+    .question-card {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .question-number {
+        font-weight: bold;
+        color: #ff7a00;
+        margin-bottom: 10px;
+    }
+    
+    .question-text {
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+    
+    .answers-list {
+        margin-left: 20px;
+    }
+    
+    .answers-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .answers-list li {
+        margin-bottom: 10px;
+    }
+    
+    .answers-list label {
+        display: flex;
+        align-items: flex-start;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 8px;
+        transition: background-color 0.2s;
+    }
+    
+    .answers-list label:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .answers-list input[type="radio"] {
+        margin-right: 10px;
+        margin-top: 3px;
+    }
+    
+    .test-actions {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 30px;
+    }
+    
+    .btn-primary {
+        background-color: #ff7a00;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #e66d00;
+    }
+    
+    @media (max-width: 768px) {
+        .test-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .timer {
+            margin-top: 15px;
+            align-self: flex-start;
+        }
+        
+        .test-params {
+            flex-direction: column;
+        }
+        
+        .param-item {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

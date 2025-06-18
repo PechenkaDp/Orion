@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Тип инструктажа</label>
+            {{ form.instruction_type }}
+        </div>
+        
+        <div class="form-group">
+            <label>Подразделение</label>
+            {{ form.department }}
+        </div>
+        
+        <div class="form-group">
+            <label>Дата проведения</label>
+            {{ form.instruction_date }}
+        </div>
+        
+        <div class="form-group">
+            <label>Дата следующего инструктажа</label>
+            {{ form.next_instruction_date }}
+        </div>
+        
+        <div class="form-group">
+            <label>Место проведения</label>
+            {{ form.location }}
+        </div>
+        
+        <div class="form-group">
+            <label>Продолжительность (мин)</label>
+            {{ form.duration }}
+        </div>
+        
+        <div class="form-group">
+            <label>Примечания</label>
+            {{ form.notes }}
+        </div>
+        
+        <div class="form-section">
+            <h3>Участники</h3>
+            <div class="employee-select">
+                {% for employee in employees %}
+                <div class="employee-item">
+                    <input type="checkbox" name="participants" id="employee_{{ employee.id }}" value="{{ employee.id }}" 
+                    {% if current_participants and employee.id in current_participants %}checked{% endif %}>
+                    <label for="employee_{{ employee.id }}">{{ employee }} ({{ employee.department }})</label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

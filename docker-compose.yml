@@ -1,0 +1,71 @@
+version: '3.8'
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data: {}
+  grafana-data: {}
+  etc_influxdb_data: {}
+  influxdb_data: {}
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - 9090:9090
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdbDj
+    ports:
+      - "8086:8086"
+    volumes:
+      - etc_influxdb_data:/etc/influxdb2
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      - monitoring
+  telegraf:
+    image: telegraf:latest
+    container_name: telegrafDjango
+    restart: always
+    networks:
+      - monitoring
+    depends_on:
+      - influxdb
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/rootfs/sys:ro
+      - /proc:/rootfs/proc:ro
+      - /etc:/rootfs/etc:ro
+    environment:
+      HOST_PROC: /rootfs/proc
+      HOST_SYS: /rootfs/sys
+      HOST_ETC: /rootfs/etc
+    privileged: true

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Удаление сотрудника | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Удаление сотрудника</h1>
+</div>
+
+<div class="confirmation-container">
+    <div class="confirmation-box">
+        <h2>Подтверждение удаления</h2>
+        <p>Вы действительно хотите удалить сотрудника?</p>
+        <p><strong>{{ employee.user.last_name }} {{ employee.user.first_name }}</strong></p>
+        <p class="warning-text">Внимание! Вместе с сотрудником будет удалена вся связанная информация, включая историю инструктажей, выдачи СИЗ и медосмотров.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-buttons">
+                <button type="submit" class="action-btn btn-danger">Удалить</button>
+                <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

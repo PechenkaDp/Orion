@@ -1,0 +1,513 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Настройки | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Настройки системы</h1>
+</div>
+
+<div class="settings-container">
+    <div class="settings-sidebar">
+        <ul class="settings-menu">
+            <li class="active" data-target="profile-settings">Профиль</li>
+            <li data-target="notification-settings">Уведомления</li>
+            <li data-target="system-settings">Системные настройки</li>
+            <li data-target="security-settings">Безопасность</li>
+            <li data-target="reference-settings">Справочники</li>
+        </ul>
+    </div>
+
+    <div class="settings-content">
+        <div id="profile-settings" class="settings-section active">
+            <h2>Настройки профиля</h2>
+
+            <form method="post" action="{% url 'profile' %}" class="settings-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="first_name">Имя</label>
+                    <input type="text" id="first_name" name="first_name" class="form-control" value="{{ user.first_name }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Фамилия</label>
+                    <input type="text" id="last_name" name="last_name" class="form-control" value="{{ user.last_name }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Телефон</label>
+                    <input type="text" id="phone" name="phone" class="form-control" value="{{ user.employee.phone|default:'' }}">
+                </div>
+
+                <button type="submit" class="action-btn">Сохранить изменения</button>
+            </form>
+        </div>
+
+        <div id="notification-settings" class="settings-section">
+            <h2>Настройки уведомлений</h2>
+
+            <form method="post" action="{% url 'notifications' %}" class="settings-form">
+                {% csrf_token %}
+                <div class="form-section">
+                    <h3>Email уведомления</h3>
+                    <div class="form-check">
+                        <input type="checkbox" id="email_new_task" name="email_new_task" class="form-check-input" checked>
+                        <label for="email_new_task" class="form-check-label">Новые задачи</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="email_ppe_request" name="email_ppe_request" class="form-check-input" checked>
+                        <label for="email_ppe_request" class="form-check-label">Заявки на СИЗ</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="email_inspection" name="email_inspection" class="form-check-input" checked>
+                        <label for="email_inspection" class="form-check-label">Проверки и нарушения</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="email_incident" name="email_incident" class="form-check-input" checked>
+                        <label for="email_incident" class="form-check-label">Происшествия</label>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Системные уведомления</h3>
+                    <div class="form-check">
+                        <input type="checkbox" id="system_new_task" name="system_new_task" class="form-check-input" checked>
+                        <label for="system_new_task" class="form-check-label">Новые задачи</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="system_ppe_request" name="system_ppe_request" class="form-check-input" checked>
+                        <label for="system_ppe_request" class="form-check-label">Заявки на СИЗ</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="system_inspection" name="system_inspection" class="form-check-input" checked>
+                        <label for="system_inspection" class="form-check-label">Проверки и нарушения</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="system_incident" name="system_incident" class="form-check-input" checked>
+                        <label for="system_incident" class="form-check-label">Происшествия</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="system_risk" name="system_risk" class="form-check-input" checked>
+                        <label for="system_risk" class="form-check-label">Новые риски</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="action-btn">Сохранить изменения</button>
+            </form>
+        </div>
+
+        <div id="system-settings" class="settings-section">
+            <h2>Системные настройки</h2>
+
+            <form method="post" action="{% url 'settings' %}" class="settings-form">
+                {% csrf_token %}
+                <input type="hidden" name="settings_type" value="system">
+                <div class="form-section">
+                    <h3>Основные настройки</h3>
+                    <div class="form-group">
+                        <label for="company_name">Название организации</label>
+                        <input type="text" id="company_name" name="company_name" class="form-control" value="ООО Орион">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin_email">Email администратора</label>
+                        <input type="email" id="admin_email" name="admin_email" class="form-control" value="admin@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="items_per_page">Элементов на странице</label>
+                        <select id="items_per_page" name="items_per_page" class="form-control">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Настройки отчетов</h3>
+                    <div class="form-group">
+                        <label for="report_logo">Логотип для отчетов</label>
+                        <input type="file" id="report_logo" name="report_logo" class="form-control">
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="include_company_info" name="include_company_info" class="form-check-input" checked>
+                        <label for="include_company_info" class="form-check-label">Включать информацию о компании</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="include_charts" name="include_charts" class="form-check-input" checked>
+                        <label for="include_charts" class="form-check-label">Включать графики и диаграммы</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="action-btn">Сохранить изменения</button>
+            </form>
+        </div>
+
+        <div id="security-settings" class="settings-section">
+            <h2>Настройки безопасности</h2>
+
+            <form method="post" action="{% url 'settings' %}" class="settings-form">
+                {% csrf_token %}
+                <input type="hidden" name="settings_type" value="security">
+                <div class="form-section">
+                    <h3>Изменение пароля</h3>
+                    <div class="form-group">
+                        <label for="current_password">Текущий пароль</label>
+                        <input type="password" id="current_password" name="current_password" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">Новый пароль</label>
+                        <input type="password" id="new_password" name="new_password" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Подтверждение пароля</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Настройки сеанса</h3>
+                    <div class="form-group">
+                        <label for="session_timeout">Время неактивности (минуты)</label>
+                        <select id="session_timeout" name="session_timeout" class="form-control">
+                            <option value="15">15 минут</option>
+                            <option value="30" selected>30 минут</option>
+                            <option value="60">1 час</option>
+                            <option value="120">2 часа</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="remember_login" name="remember_login" class="form-check-input">
+                        <label for="remember_login" class="form-check-label">Запоминать вход</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="action-btn">Сохранить изменения</button>
+            </form>
+        </div>
+
+        <div id="reference-settings" class="settings-section">
+            <h2>Справочники</h2>
+
+            <div class="reference-tabs">
+                <div class="reference-tab active" data-target="ref-departments">Подразделения</div>
+                <div class="reference-tab" data-target="ref-ppe">СИЗ</div>
+                <div class="reference-tab" data-target="ref-instruction-types">Типы инструктажей</div>
+                <div class="reference-tab" data-target="ref-hazards">Опасности</div>
+            </div>
+
+            <div class="reference-content">
+                <div id="ref-departments" class="reference-section active">
+                    <div class="reference-header">
+                        <h3>Подразделения</h3>
+                        <a href="{% url 'admin:core_department_add' %}" class="action-btn">Добавить</a>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Родительское подразделение</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for department in departments %}
+                            <tr>
+                                <td>{{ department.name }}</td>
+                                <td>{{ department.parent.name|default:"-" }}</td>
+                                <td>
+                                    <a href="{% url 'admin:core_department_change' department.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-table">Подразделения не найдены</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="ref-ppe" class="reference-section">
+                    <div class="reference-header">
+                        <h3>Средства индивидуальной защиты</h3>
+                        <a href="{% url 'admin:core_ppeitem_add' %}" class="action-btn">Добавить</a>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Категория</th>
+                                <th>Срок выдачи (дни)</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ppe in ppe_items %}
+                            <tr>
+                                <td>{{ ppe.name }}</td>
+                                <td>{{ ppe.category }}</td>
+                                <td>{{ ppe.standard_issue_period|default:"-" }}</td>
+                                <td>
+                                    <a href="{% url 'admin:core_ppeitem_change' ppe.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="empty-table">СИЗ не найдены</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="ref-instruction-types" class="reference-section">
+                    <div class="reference-header">
+                        <h3>Типы инструктажей</h3>
+                        <a href="{% url 'admin:core_instructiontype_add' %}" class="action-btn">Добавить</a>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Периодичность (дни)</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for type in instruction_types %}
+                            <tr>
+                                <td>{{ type.name }}</td>
+                                <td>{{ type.period_days|default:"Непериодический" }}</td>
+                                <td>
+                                    <a href="{% url 'admin:core_instructiontype_change' type.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-table">Типы инструктажей не найдены</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="ref-hazards" class="reference-section">
+                    <div class="reference-header">
+                        <h3>Опасности</h3>
+                        <a href="{% url 'admin:core_hazard_add' %}" class="action-btn">Добавить</a>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Категория</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for hazard in hazards %}
+                            <tr>
+                                <td>{{ hazard.name }}</td>
+                                <td>{{ hazard.category }}</td>
+                                <td>
+                                    <a href="{% url 'admin:core_hazard_change' hazard.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-table">Опасности не найдены</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .settings-container {
+        display: flex;
+        gap: 20px;
+    }
+
+    .settings-sidebar {
+        width: 220px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .settings-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .settings-menu li {
+        padding: 15px 20px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+    }
+
+    .settings-menu li:last-child {
+        border-bottom: none;
+    }
+
+    .settings-menu li:hover {
+        background-color: #f9f9f9;
+    }
+
+    .settings-menu li.active {
+        background-color: #ff7a00;
+        color: white;
+    }
+
+    .settings-content {
+        flex: 1;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        padding: 20px;
+    }
+
+    .settings-section {
+        display: none;
+    }
+
+    .settings-section.active {
+        display: block;
+    }
+
+    .settings-section h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .form-section {
+        margin-bottom: 30px;
+    }
+
+    .form-section h3 {
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+
+    .form-check {
+        margin-bottom: 10px;
+    }
+
+    .form-check-input {
+        margin-right: 10px;
+    }
+
+    .reference-tabs {
+        display: flex;
+        background-color: #f5f5f5;
+        border-radius: 8px 8px 0 0;
+        margin-bottom: 20px;
+    }
+
+    .reference-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+    }
+
+    .reference-tab:hover {
+        background-color: #eee;
+    }
+
+    .reference-tab.active {
+        background-color: #ff7a00;
+        color: white;
+    }
+
+    .reference-section {
+        display: none;
+    }
+
+    .reference-section.active {
+        display: block;
+    }
+
+    .reference-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .reference-header h3 {
+        margin: 0;
+    }
+
+    .form-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .cancel-btn {
+        background-color: #f5f5f5;
+        color: #333;
+        border: 1px solid #ddd;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Переключение вкладок настроек
+        const menuItems = document.querySelectorAll('.settings-menu li');
+        menuItems.forEach(item => {
+            item.addEventListener('click', function() {
+                // Убираем активный класс со всех пунктов меню
+                menuItems.forEach(i => i.classList.remove('active'));
+                // Добавляем активный класс текущему пункту
+                this.classList.add('active');
+
+                // Скрываем все секции настроек
+                const sections = document.querySelectorAll('.settings-section');
+                sections.forEach(section => section.classList.remove('active'));
+
+                // Показываем нужную секцию
+                const targetSection = document.getElementById(this.dataset.target);
+                targetSection.classList.add('active');
+            });
+        });
+
+        // Переключение вкладок справочников
+        const refTabs = document.querySelectorAll('.reference-tab');
+        refTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Убираем активный класс со всех вкладок
+                refTabs.forEach(t => t.classList.remove('active'));
+                // Добавляем активный класс текущей вкладке
+                this.classList.add('active');
+
+                // Скрываем все секции справочников
+                const refSections = document.querySelectorAll('.reference-section');
+                refSections.forEach(section => section.classList.remove('active'));
+
+                // Показываем нужную секцию
+                const targetRefSection = document.getElementById(this.dataset.target);
+                targetRefSection.classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %}

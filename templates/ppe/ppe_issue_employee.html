@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Выдача СИЗ сотруднику | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Выдача СИЗ сотруднику: {{ employee }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>СИЗ</label>
+            <select name="ppe_item" class="form-control" required>
+                <option value="">Выберите СИЗ</option>
+                {% for item in ppe_items %}
+                <option value="{{ item.id }}">{{ item.name }} ({{ item.category }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Количество</label>
+            <input type="number" name="quantity" class="form-control" value="1" min="1" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Ожидаемая дата возврата</label>
+            <input type="datetime-local" name="expected_return_date" class="form-control">
+        </div>
+        
+        <div class="form-group">
+            <label>Примечания</label>
+            <textarea name="notes" class="form-control" rows="3"></textarea>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Выдать СИЗ</button>
+            <a href="{% url 'employee_detail' employee.id %}" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

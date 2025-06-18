@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Медицинские осмотры | Орион{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Медицинские осмотры</h1>
+    <button class="action-btn" onclick="location.href='{% url 'medical_exam_create' %}'">Добавить медосмотр</button>
+</div>
+<div class="filter-bar">
+    <form method="get" action="{% url 'medical_exam_list' %}">
+        <div class="filter-group">
+            <label for="department">Подразделение:</label>
+            <select name="department" id="department" class="form-control" onchange="this.form.submit()">
+                <option value="">Все подразделения</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if department_filter == dept.id|stringformat:"i" %}selected{% endif %}>{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="status">Статус:</label>
+            <select name="status" id="status" class="form-control" onchange="this.form.submit()">
+                <option value="">Все статусы</option>
+                <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Просроченные</option>
+                <option value="upcoming" {% if status_filter == 'upcoming' %}selected{% endif %}>Предстоящие</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Завершенные</option>
+            </select>
+        </div>
+    </form>
+</div>
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Сотрудник</th>
+                <th>Подразделение</th>
+                <th>Дата осмотра</th>
+                <th>Следующий осмотр</th>
+                <th>Тип осмотра</th>
+                <th>Результат</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for exam in page_obj %}
+            <tr>
+                <td>{{ exam.employee.user.last_name }} {{ exam.employee.user.first_name }}</td>
+                <td>{{ exam.employee.department.name }}</td>
+                <td>{{ exam.exam_date|date:"d.m.Y" }}</td>
+                <td>{{ exam.next_exam_date|date:"d.m.Y" }}</td>
+                <td>{{ exam.exam_type }}</td>
+                <td>{{ exam.result }}</td>
+                <td>
+                    <span class="status-badge 
+                        {% if exam.next_exam_date < current_date %}status-urgent
+                        {% elif exam.next_exam_date < next_month %}status-pending
+                        {% else %}status-completed{% endif %}">
+                        {% if exam.next_exam_date < current_date %}Просрочен
+                        {% elif exam.next_exam_date < next_month %}Скоро
+                        {% else %}В норме{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'medical_exam_detail' exam.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'medical_exam_update' exam.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                    <a href="{% url 'medical_exam_delete' exam.id %}" class="icon-btn" title="Удалить"><span class="btn-icon">🗑️</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty-table">Медицинские осмотры не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'partials/pagination.html' with page=page_obj %}
+<style>
+    .status-urgent {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+    .status-pending {
+        background-color: #fff5e6;
+        color: #ff9800;
+    }
+    .status-completed {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+</style>
+{% endblock %}

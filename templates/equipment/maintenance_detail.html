@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Обслуживание: {{ maintenance.equipment.name }} | Орион{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Обслуживание оборудования</h1>
+    <div class="action-buttons">
+        <a href="{% url 'maintenance_update' maintenance.id %}" class="action-btn">Редактировать</a>
+        <a href="{% url 'equipment_detail' maintenance.equipment.id %}" class="action-btn">К оборудованию</a>
+    </div>
+</div>
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h2>Информация об обслуживании</h2>
+        </div>
+        <div class="detail-content">
+        <div class="detail-row">
+            <div class="detail-label">Оборудование:</div>
+            <div class="detail-value">{{ maintenance.equipment.name }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Модель:</div>
+            <div class="detail-value">{{ maintenance.equipment.model|default:"Не указана" }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Серийный номер:</div>
+            <div class="detail-value">{{ maintenance.equipment.serial_number|default:"Не указан" }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Тип обслуживания:</div>
+            <div class="detail-value">{{ maintenance.maintenance_type }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Дата обслуживания:</div>
+            <div class="detail-value">{{ maintenance.maintenance_date|date:"d.m.Y H:i" }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Выполнил:</div>
+            <div class="detail-value">{{ maintenance.performed_by.last_name }} {{ maintenance.performed_by.first_name }}</div>
+        </div>
+        {% if maintenance.description %}
+        <div class="detail-row">
+            <div class="detail-label">Описание работ:</div>
+            <div class="detail-value">{{ maintenance.description }}</div>
+        </div>
+        {% endif %}
+        <div class="detail-row">
+            <div class="detail-label">Результат:</div>
+            <div class="detail-value">{{ maintenance.result }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Дата следующего обслуживания:</div>
+            <div class="detail-value {% if maintenance.next_maintenance_date and maintenance.next_maintenance_date < current_date %}overdue{% endif %}">
+                {{ maintenance.next_maintenance_date|date:"d.m.Y"|default:"Не запланировано" }}
+                {% if maintenance.next_maintenance_date and maintenance.next_maintenance_date < current_date %}
+                <span class="status-badge status-urgent">Просрочено</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if maintenance.documents_path %}
+        <div class="detail-row">
+            <div class="detail-label">Документы:</div>
+            <div class="detail-value">
+                <a href="{{ maintenance.documents_path }}" class="file-link" target="_blank">Скачать документы</a>
+            </div>
+        </div>
+        {% endif %}
+        {% if maintenance.notes %}
+        <div class="detail-row">
+            <div class="detail-label">Примечания:</div>
+            <div class="detail-value">{{ maintenance.notes }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-card">
+    <div class="detail-header">
+        <h2>История обслуживания {{ maintenance.equipment.name }}</h2>
+    </div>
+    <div class="detail-content">
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Тип обслуживания</th>
+                    <th>Выполнил</th>
+                    <th>Результат</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in equipment_maintenance_history %}
+                <tr {% if record.id == maintenance.id %}class="active-row"{% endif %}>
+                    <td>{{ record.maintenance_date|date:"d.m.Y" }}</td>
+                    <td>{{ record.maintenance_type }}</td>
+                    <td>{{ record.performed_by.last_name }} {{ record.performed_by.first_name }}</td>
+                    <td>{{ record.result }}</td>
+                    <td>
+                        <a href="{% url 'maintenance_detail' record.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-table">История обслуживания отсутствует</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+<style>
+    .overdue {
+        color: #f44336;
+        font-weight: bold;
+    }
+
+    .active-row {
+        background-color: #fff8e1;
+    }
+
+    .file-link {
+        color: #ff7a00;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .file-link:hover {
+        text-decoration: underline;
+    }
+
+    .file-link:before {
+        content: '📄';
+        margin-right: 5px;
+    }
+</style>
+{% endblock %}

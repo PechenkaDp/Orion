@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Обновление данных обслуживания | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Редактирование записи об обслуживании</h1>
+</div>
+
+<div class="form-container">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Оборудование</label>
+            <div class="form-control-static">{{ maintenance.equipment.name }}</div>
+        </div>
+        
+        <div class="form-group">
+            <label>Тип обслуживания</label>
+            {{ form.maintenance_type }}
+        </div>
+        
+        <div class="form-group">
+            <label>Дата обслуживания</label>
+            {{ form.maintenance_date }}
+        </div>
+        
+        <div class="form-group">
+            <label>Описание работ</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-group">
+            <label>Результат</label>
+            {{ form.result }}
+        </div>
+        
+        <div class="form-group">
+            <label>Дата следующего обслуживания</label>
+            {{ form.next_maintenance_date }}
+        </div>
+        
+        <div class="form-group">
+            <label>Документы</label>
+            {{ form.documents_path }}
+        </div>
+        
+        <div class="form-group">
+            <label>Примечания</label>
+            {{ form.notes }}
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить изменения</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-control-static {
+        padding: 10px;
+        background-color: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        color: #555;
+    }
+</style>
+{% endblock %}

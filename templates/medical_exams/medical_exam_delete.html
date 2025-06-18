@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Удаление медицинского осмотра | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Удаление медицинского осмотра</h1>
+</div>
+
+<div class="confirmation-container">
+    <div class="confirmation-box">
+        <h2>Подтверждение удаления</h2>
+        <p>Вы действительно хотите удалить медицинский осмотр?</p>
+        <p><strong>{{ medical_exam.employee.user.last_name }} {{ medical_exam.employee.user.first_name }}</strong> от <strong>{{ medical_exam.exam_date|date:"d.m.Y" }}</strong></p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-buttons">
+                <button type="submit" class="action-btn btn-danger">Удалить</button>
+                <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

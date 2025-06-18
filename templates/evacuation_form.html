@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="form-container">
+    <div class="alert alert-warning">
+        <strong>Внимание!</strong> Отправка уведомления об эвакуации приведет к оповещению сотрудников о необходимости покинуть здание. Используйте эту функцию только при реальной необходимости.
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="title">Заголовок уведомления</label>
+            <input type="text" id="title" name="title" class="form-control" value="Внимание! Необходима эвакуация!" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Текст уведомления</label>
+            <textarea id="message" name="message" class="form-control" rows="5" required>Требуется немедленная эвакуация из здания. Следуйте указаниям ответственных лиц.</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="department">Отправить уведомление</label>
+            <select id="department" name="department" class="form-control">
+                <option value="all">Всем сотрудникам</option>
+                {% for department in departments %}
+                <option value="{{ department.id }}">Только в подразделение: {{ department.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn btn-danger">Отправить уведомление об эвакуации</button>
+            <a href="javascript:history.back()" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .btn-danger {
+        background-color: #f44336;
+    }
+    
+    .btn-danger:hover {
+        background-color: #d32f2f;
+    }
+</style>
+{% endblock %}

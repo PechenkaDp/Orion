@@ -1,0 +1,209 @@
+{% if user_role == 'safety_specialist' or user_role == 'admin' %}
+<div class="dashboard-card critical-risks-card" id="criticalRisksCard">
+    <div class="card-header">
+        <div class="card-icon">⚠️</div>
+        Критические риски
+        <span class="risk-counter" id="criticalRisksCounter">0</span>
+    </div>
+    
+    <div class="critical-risks-list" id="criticalRisksList">
+        <!-- Здесь будут отображаться критические риски -->
+        <div class="loader">Загрузка данных...</div>
+    </div>
+    
+    <div class="card-actions">
+        <a href="{% url 'evacuation_create' %}" class="action-btn evacuation-btn">
+            <span class="btn-icon">🚨</span> Уведомление об эвакуации
+        </a>
+    </div>
+</div>
+
+<style>
+    .critical-risks-card {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .critical-risks-card.alert-active {
+        animation: risk-alert 1.5s infinite;
+    }
+    
+    @keyframes risk-alert {
+        0% { box-shadow: 0 0 5px rgba(244, 67, 54, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(244, 67, 54, 0.8); }
+        100% { box-shadow: 0 0 5px rgba(244, 67, 54, 0.5); }
+    }
+    
+    .risk-counter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        background-color: #f44336;
+        color: white;
+        border-radius: 10px;
+        font-size: 12px;
+        margin-left: 8px;
+    }
+    
+    .critical-risks-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 15px;
+    }
+    
+    .risk-item {
+        padding: 10px;
+        margin-bottom: 8px;
+        background-color: #fff5f5;
+        border-left: 3px solid #f44336;
+        border-radius: 4px;
+    }
+    
+    .risk-item.high {
+        background-color: #fff5e6;
+        border-left-color: #ff9800;
+    }
+    
+    .risk-item.critical {
+        background-color: #ffe6e6;
+        border-left-color: #f44336;
+    }
+    
+    .risk-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .risk-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: #666;
+    }
+    
+    .risk-actions {
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .loader {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+    }
+    
+    .evacuation-btn {
+        background-color: #f44336;
+        width: 100%;
+        text-align: center;
+        margin-top: 10px;
+    }
+    
+    .evacuation-btn:hover {
+        background-color: #d32f2f;
+    }
+    
+    .btn-icon {
+        margin-right: 5px;
+    }
+    
+    .no-risks {
+        text-align: center;
+        padding: 20px;
+        color: #4caf50;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Функция для получения критических рисков
+        function fetchCriticalRisks() {
+            fetch('{% url "api_critical_risks" %}')
+                .then(response => response.json())
+                .then(data => {
+                    const risksList = document.getElementById('criticalRisksList');
+                    const risksCounter = document.getElementById('criticalRisksCounter');
+                    const risksCard = document.getElementById('criticalRisksCard');
+                    
+                    // Очищаем контейнер
+                    risksList.innerHTML = '';
+                    
+                    if (data.has_critical_risks) {
+                        // Активируем анимацию оповещения
+                        risksCard.classList.add('alert-active');
+                        
+                        // Обновляем счетчик
+                        risksCounter.textContent = data.critical_risks.length;
+                        
+                        // Добавляем риски в список
+                        data.critical_risks.forEach(risk => {
+                            const riskItem = document.createElement('div');
+                            riskItem.className = `risk-item ${risk.level}`;
+                            
+                            riskItem.innerHTML = `
+                                <div class="risk-title">${risk.hazard_name}</div>
+                                <div class="risk-info">
+                                    <span>Уровень: ${risk.level === 'high' ? 'Высокий' : 'Критический'}</span>
+                                    <span>Подразделение: ${risk.department}</span>
+                                </div>
+                                <div class="risk-info">
+                                    <span>Местоположение: ${risk.location || 'Не указано'}</span>
+                                    <span>Оценка риска: ${risk.risk_score}</span>
+                                </div>
+                                <div class="risk-actions">
+                                    <a href="/risks/${risk.id}/" class="action-btn">Просмотр</a>
+                                    <button class="action-btn" onclick="resolveRisk(${risk.id})">Устранено</button>
+                                </div>
+                            `;
+                            
+                            risksList.appendChild(riskItem);
+                        });
+                    } else {
+                        // Отключаем анимацию, если нет критических рисков
+                        risksCard.classList.remove('alert-active');
+                        risksCounter.textContent = '0';
+                        
+                        // Показываем сообщение об отсутствии рисков
+                        risksList.innerHTML = '<div class="no-risks">Критические риски отсутствуют</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка при получении критических рисков:', error);
+                    document.getElementById('criticalRisksList').innerHTML = 
+                        '<div class="loader">Ошибка при загрузке данных</div>';
+                });
+        }
+        
+        // Функция для обработки устранения риска
+        window.resolveRisk = function(riskId) {
+            fetch(`/risks/${riskId}/resolve/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Обновляем список рисков
+                    fetchCriticalRisks();
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при устранении риска:', error);
+            });
+        };
+        
+        // Получаем данные при загрузке страницы
+        fetchCriticalRisks();
+        
+        // Обновляем данные каждые 30 секунд
+        setInterval(fetchCriticalRisks, 30000);
+    });
+</script>
+{% endif %}

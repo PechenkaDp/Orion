@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Удаление нарушения | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Удаление нарушения</h1>
+</div>
+
+<div class="confirmation-container">
+    <div class="confirmation-box">
+        <h2>Подтверждение удаления</h2>
+        <p>Вы действительно хотите удалить нарушение?</p>
+        <p><strong>{{ finding.description }}</strong></p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-buttons">
+                <button type="submit" class="action-btn btn-danger">Удалить</button>
+                <a href="{% url 'inspection_detail' finding.inspection.id %}" class="btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+<!-- risk_mitigation_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Описание мероприятия</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-group">
+            <label>Статус</label>
+            {{ form.status }}
+        </div>
+        
+        <div class="form-group">
+            <label>Ответственное лицо</label>
+            {{ form.responsible_person }}
+        </div>
+        
+        <div class="form-group">
+            <label>Срок выполнения</label>
+            {{ form.deadline }}
+        </div>
+        
+        <div class="form-group">
+            <label>Примечания</label>
+            {{ form.notes }}
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить</button>
+            {% if measure %}
+            <a href="{% url 'risk_detail' measure.risk.id %}" class="btn-secondary">Отмена</a>
+            {% else %}
+            <a href="{% url 'risk_detail' risk.id %}" class="btn-secondary">Отмена</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

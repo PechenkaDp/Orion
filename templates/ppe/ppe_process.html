@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Обработка заявки СИЗ | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Обработка заявки #{{ ppe_request.id }}</h1>
+</div>
+
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Сотрудник</label>
+            <input type="text" class="form-control" value="{{ ppe_request.employee }}" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label>СИЗ</label>
+            <input type="text" class="form-control" value="{{ ppe_request.ppe_item.name }}" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label>Количество</label>
+            <input type="text" class="form-control" value="{{ ppe_request.quantity }}" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label>Новый статус</label>
+            <select name="status" class="form-control">
+                <option value="in_progress" {% if ppe_request.status == 'in_progress' %}selected{% endif %}>В обработке</option>
+                <option value="completed" {% if ppe_request.status == 'completed' %}selected{% endif %}>Выполнено</option>
+                <option value="canceled" {% if ppe_request.status == 'canceled' %}selected{% endif %}>Отменено</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Примечания</label>
+            <textarea name="notes" class="form-control" rows="3">{{ ppe_request.notes }}</textarea>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="action-btn">Сохранить</button>
+            <a href="{% url 'ppe_detail' ppe_request.id %}" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

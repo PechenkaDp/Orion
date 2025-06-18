@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Сотрудники | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Сотрудники</h1>
+    <div class="action-buttons">
+        <button class="action-btn" onclick="location.href='{% url 'employee_create' %}'">Добавить сотрудника</button>
+        {% if is_medical_worker %}
+        <button type="button" class="action-btn" id="selectAllBtn">Выбрать все</button>
+        <button type="button" class="action-btn" id="unselectAllBtn">Снять выделение</button>
+        <button type="button" class="action-btn btn-primary" id="sendNotificationsBtn">Отправить уведомления</button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Добавьте поле поиска в filter-bar -->
+<div class="filter-bar">
+    <form method="get" action="{% url 'employee_list' %}" id="filterForm">
+        <div class="filter-group search-group">
+            <label for="search">Поиск:</label>
+            <input type="text" name="search" id="search" class="form-control" value="{{ search_query }}" placeholder="Имя или фамилия">
+            <button type="submit" class="search-btn">🔍</button>
+        </div>
+
+        <div class="filter-group">
+            <label for="department">Подразделение:</label>
+            <select name="department" id="department" class="form-control">
+                <option value="">Все подразделения</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if department_filter == dept.id|stringformat:"i" %}selected{% endif %}>{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if is_medical_worker %}
+        <div class="filter-group">
+            <label for="medical_status">Статус медосмотра:</label>
+            <select name="medical_status" id="medical_status" class="form-control">
+                <option value="">Все статусы</option>
+                <option value="overdue" {% if medical_status_filter == 'overdue' %}selected{% endif %}>Просроченные</option>
+                <option value="warning" {% if medical_status_filter == 'warning' %}selected{% endif %}>Приближающиеся (< 5 дней)</option>
+                <option value="upcoming" {% if medical_status_filter == 'upcoming' %}selected{% endif %}>Будущие</option>
+            </select>
+        </div>
+
+        <div class="filter-date-range">
+            <label>Дата следующего медосмотра:</label>
+            <div class="date-inputs">
+                <input type="date" name="next_exam_from" class="form-control" value="{{ next_exam_from }}" placeholder="От">
+                <span>—</span>
+                <input type="date" name="next_exam_to" class="form-control" value="{{ next_exam_to }}" placeholder="До">
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="filter-buttons">
+            <button type="submit" class="action-btn">Применить</button>
+            <button type="button" class="btn-secondary" onclick="clearFilters()">Сбросить</button>
+        </div>
+    </form>
+</div>
+
+{% if is_medical_worker %}
+<form method="post" id="notificationForm" action="{% url 'send_medical_notifications' %}">
+    {% csrf_token %}
+{% endif %}
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                {% if is_medical_worker %}
+                <th class="checkbox-column"><input type="checkbox" id="selectAll"></th>
+                {% endif %}
+                <th>ФИО</th>
+                <th>Должность</th>
+                <th>Подразделение</th>
+                <th>Дата приема</th>
+                <th>Следующий медосмотр</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for employee in page_obj %}
+            <tr class="{% if employee.medical_status == 'overdue' %}medical-overdue{% elif employee.medical_status == 'warning' %}medical-warning{% endif %}">
+                {% if is_medical_worker %}
+                <td><input type="checkbox" name="selected_employees" value="{{ employee.id }}" class="employee-checkbox"></td>
+                {% endif %}
+                <td>{{ employee.user.last_name }} {{ employee.user.first_name }}</td>
+                <td>{{ employee.position }}</td>
+                <td>{{ employee.department.name }}</td>
+                <td>{{ employee.hire_date|date:"d.m.Y" }}</td>
+                <td class="{% if employee.medical_status == 'overdue' %}overdue{% elif employee.medical_status == 'warning' %}warning{% endif %}">
+                    {{ employee.next_medical_exam_date|date:"d.m.Y"|default:"Не назначен" }}
+                </td>
+                <td>
+                    <span class="status-badge {% if employee.user.is_active %}status-active{% else %}status-inactive{% endif %}">
+                        {% if employee.user.is_active %}Активен{% else %}Неактивен{% endif %}
+                    </span>
+
+                    {% if employee.medical_status == 'overdue' %}
+                    <span class="status-badge status-urgent" title="Просрочен медосмотр">Просрочен</span>
+                    {% elif employee.medical_status == 'warning' %}
+                    <span class="status-badge status-warning" title="Приближается медосмотр">< 5 дней</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'employee_detail' employee.id %}" class="icon-btn" title="Просмотр"><span class="btn-icon">👁️</span></a>
+                    <a href="{% url 'employee_update' employee.id %}" class="icon-btn" title="Редактировать"><span class="btn-icon">✏️</span></a>
+                    {% if is_medical_worker %}
+                    <a href="{% url 'medical_exam_create' employee.id %}" class="icon-btn" title="Назначить медосмотр"><span class="btn-icon">🏥</span></a>
+                    {% endif %}
+                    <a href="{% url 'employee_delete' employee.id %}" class="icon-btn" title="Удалить"><span class="btn-icon">🗑️</span></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{% if is_medical_worker %}8{% else %}7{% endif %}" class="empty-table">Сотрудники не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_medical_worker %}
+</form>
+{% endif %}
+
+{% include 'partials/pagination.html' with page=page_obj %}
+
+<style>
+    .status-active {
+        background-color: #e6f7e6;
+        color: #4caf50;
+    }
+    .status-inactive {
+        background-color: #ffe6e6;
+        color: #f44336;
+    }
+    .status-urgent {
+        background-color: #f44336;
+        color: white;
+    }
+    .status-warning {
+        background-color: #ff9800;
+        color: white;
+    }
+    .medical-overdue {
+        background-color: rgba(244, 67, 54, 0.1);
+    }
+    .medical-warning {
+        background-color: rgba(255, 152, 0, 0.1);
+    }
+    .overdue {
+        color: #f44336;
+        font-weight: bold;
+    }
+    .warning {
+        color: #ff9800;
+        font-weight: bold;
+    }
+    .checkbox-column {
+        width: 40px;
+    }
+    .filter-date-range {
+        display: flex;
+        flex-direction: column;
+        margin-right: 15px;
+    }
+    .date-inputs {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .date-inputs input {
+        width: 140px;
+    }
+    .filter-buttons {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+    }
+    #notificationForm {
+        margin-bottom: 0;
+    }
+    .search-group {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 250px;
+    }
+
+    .search-group input {
+        flex-grow: 1;
+        margin-right: 0;
+    }
+
+    .search-btn {
+        background-color: #ff7a00;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+
+    .search-btn:hover {
+        background-color: #e66d00;
+    }
+
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-group {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Кнопка сброса фильтров
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            // Сбрасываем все поля формы
+            document.getElementById('filterForm').reset();
+            // Отправляем форму
+            document.getElementById('filterForm').submit();
+        });
+
+        {% if is_medical_worker %}
+        // Главный чекбокс "Выбрать все"
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
+
+        selectAllCheckbox.addEventListener('change', function() {
+            employeeCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        });
+
+        // Кнопка "Выбрать все"
+        document.getElementById('selectAllBtn').addEventListener('click', function() {
+            selectAllCheckbox.checked = true;
+            employeeCheckboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        });
+
+        // Кнопка "Снять выделение"
+        document.getElementById('unselectAllBtn').addEventListener('click', function() {
+            selectAllCheckbox.checked = false;
+            employeeCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        });
+
+        // Кнопка "Отправить уведомления"
+        document.getElementById('sendNotificationsBtn').addEventListener('click', function() {
+            // Проверяем, выбран ли хотя бы один сотрудник
+            const selectedCount = Array.from(employeeCheckboxes).filter(cb => cb.checked).length;
+
+            if (selectedCount === 0) {
+                alert('Пожалуйста, выберите хотя бы одного сотрудника для отправки уведомления');
+                return;
+            }
+
+            if (confirm(`Вы уверены, что хотите отправить уведомления о медосмотре ${selectedCount} сотрудникам?`)) {
+                document.getElementById('notificationForm').submit();
+            }
+        });
+
+        // Обработчик изменения полей формы фильтрации
+        document.querySelectorAll('#filterForm select, #filterForm input').forEach(element => {
+            element.addEventListener('change', function() {
+                // Автоматически отправляем форму при изменении любого поля (кроме дат)
+                if (!element.type || element.type !== 'date') {
+                    document.getElementById('filterForm').submit();
+                }
+            });
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Добавление материалов | Орион{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Добавление материалов к инструктажу</h1>
+    <div class="action-buttons">
+        <a href="{% url 'instruction_detail' instruction.id %}" class="btn-secondary">Вернуться к инструктажу</a>
+    </div>
+</div>
+
+<div class="instruction-info">
+    <h2>{{ instruction.instruction_type.name }}</h2>
+    <p><strong>Подразделение:</strong> {{ instruction.department.name }}</p>
+    <p><strong>Дата проведения:</strong> {{ instruction.instruction_date|date:"d.m.Y H:i" }}</p>
+</div>
+
+{% if materials %}
+<div class="section-title">Добавленные материалы</div>
+<div class="materials-list">
+    {% for material in materials %}
+    <div class="material-item">
+        <div class="material-icon">📄</div>
+        <div class="material-content">
+            <h3>{{ material.title }}</h3>
+            <p>{{ material.content|truncatechars:100 }}</p>
+            {% if material.file %}
+            <p><a href="{{ material.file.url }}" target="_blank">Скачать файл</a></p>
+            {% endif %}
+        </div>
+        <div class="material-actions">
+            <span class="material-order">{{ material.order }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="section-title">Добавить новый материал</div>
+
+<div class="form-container">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Название материала</label>
+            {{ form.title }}
+        </div>
+        
+        <div class="form-group">
+            <label>Содержание</label>
+            {{ form.content }}
+            <div class="form-text text-muted">
+                Введите содержание материала. Поддерживается форматирование Markdown.
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Файл (необязательно)</label>
+            {{ form.file }}
+            <div class="form-text text-muted">
+                Вы можете загрузить файл с дополнительными материалами (PDF, DOCX, PPT и др.)
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Порядок отображения</label>
+            {{ form.order }}
+            <div class="form-text text-muted">
+                Укажите порядок отображения материала. Материалы будут отображаться по возрастанию значения.
+            </div>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" name="add_more" class="action-btn">Сохранить и добавить еще</button>
+            <button type="submit" name="add_test" class="action-btn">Сохранить и добавить тест</button>
+            <button type="submit" class="action-btn">Сохранить и завершить</button>
+            <a href="{% url 'instruction_detail' instruction.id %}" class="btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .instruction-info {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .instruction-info h2 {
+        margin-top: 0;
+        color: #ff7a00;
+    }
+    
+    .materials-list {
+        margin-bottom: 20px;
+    }
+    
+    .material-item {
+        display: flex;
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        align-items: center;
+    }
+    
+    .material-icon {
+        font-size: 24px;
+        margin-right: 15px;
+        width: 40px;
+        text-align: center;
+    }
+    
+    .material-content {
+        flex: 1;
+    }
+    
+    .material-content h3 {
+        margin: 0 0 5px 0;
+        font-size: 18px;
+    }
+    
+    .material-content p {
+        margin: 0;
+        color: #666;
+    }
+    
+    .material-actions {
+        margin-left: 10px;
+    }
+    
+    .material-order {
+        display: inline-block;
+        background-color: #f0f0f0;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}

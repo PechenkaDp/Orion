@@ -1,0 +1,74 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% load admin_urls %}
+{% load static %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{{ form.media }}
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}">{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a> &rsaquo;
+  <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a> &rsaquo;
+  <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+  {% trans 'Импорт' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Импорт данных</h1>
+
+<div class="help-text" style="margin-bottom: 20px;">
+  <p><strong>Инструкция:</strong></p>
+  <ol>
+    <li>Добавьте заполненный файл через форму ниже. Если формат файла допустимый, то он автоматически отобразится в форме.</li>
+    <li>Нажмите кнопку загрузить.</li>
+    <li>После загрузки вы сможете проверить данные перед окончательным импортом.</li>
+  </ol>
+</div>
+    
+
+<form enctype="multipart/form-data" method="post" id="importForm">
+  {% csrf_token %}
+
+  <fieldset class="module aligned">
+    {% for field in form %}
+      <div class="form-row">
+        <div{% if field.errors %} class="errors"{% endif %}>
+          {% if field.errors %}{{ field.errors }}{% endif %}
+          <label class="required" for="id_{{ field.name }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}
+          <div class="help">{{ field.help_text|safe }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </fieldset>
+
+  <div class="submit-row">
+    <input type="submit" class="default" value="{% trans "Загрузить" %}">
+  </div>
+</form>
+
+<div class="additional-info" style="margin-top: 20px; padding: 15px; background-color: #f8f8f8; border-radius: 4px;">
+  <h2 style="margin-top: 0;">Поддерживаемые форматы</h2>
+  <ul>
+    <li><strong>CSV</strong> - можно редактировать в Excel, Google Sheets или любом текстовом редакторе</li>
+    <li><strong>XLSX</strong> - формат Microsoft Excel</li>
+    <li><strong>JSON</strong> - для интеграции с другими системами</li>
+  </ul>
+
+  <h2>Советы по импорту</h2>
+  <ul>
+    <li>Убедитесь, что все обязательные поля заполнены</li>
+    <li>Даты должны быть в формате ГГГГ-ММ-ДД (например, 2023-03-15)</li>
+    <li>Для ссылок на другие объекты (например, подразделение) используйте ID объекта</li>
+    <li>Поля с множественным выбором должны быть разделены точкой с запятой</li>
+  </ul>
+</div>
+{% endblock %}
