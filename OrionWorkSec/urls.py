@@ -286,8 +286,8 @@ urlpatterns = [
          login_required(role_required(['admin', 'medical_worker'])(views.send_medical_notifications)),
          name='send_medical_notifications'),
 
-    path('prometheus/', include('django_prometheus.urls')),
-    path('metrics/', views.metrics_view, name='metrics'),
+    # path('prometheus/', include('django_prometheus.urls')),
+    # path('metrics/', views.metrics_view, name='metrics'),
 
     # Уведомления об эвакуации
     path('evacuation/create/',

@@ -102,4 +102,4 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(self.style.SUCCESS('Data initialization completed successfully!'))
-        self.stdout.write(self.style.SUCCESS('Admin credentials: admin / admin123'))
+        self.stdout.write(self.style.SUCCESS('Admin credentials: admin / 123'))

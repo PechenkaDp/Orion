@@ -1,5 +1,5 @@
 """
-Django's settings for OrionWorkSec project.
+Django's settings for OrionWorkSec project - Railway optimized
 """
 import os
 from pathlib import Path
@@ -25,13 +25,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'import_export',
-    'django_prometheus',
+    # Отключаем prometheus в production
+    # 'django_prometheus',
 ]
 
 MIDDLEWARE = [
-    'django_prometheus.middleware.PrometheusBeforeMiddleware',
+    # Отключаем prometheus middleware в production
+    # 'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Для статики
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -39,7 +41,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.RoleBasedAccessMiddleware',
-    'django_prometheus.middleware.PrometheusAfterMiddleware',
+    # 'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'OrionWorkSec.urls'
@@ -63,11 +65,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'OrionWorkSec.wsgi.application'
 
 # Database
-# Поддержка как Railway DATABASE_URL, так и отдельных параметров
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Для Railway и других платформ с DATABASE_URL
+    # Для Railway
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
@@ -114,8 +115,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Настройка для работы со статикой в production
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
@@ -164,36 +163,19 @@ CRONJOBS = [
     ('0 8 * * *', 'core.cron_jobs.check_medical_exams'),
 ]
 
-# Logging
+# Simplified logging for production
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
-        },
-    },
     'handlers': {
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'app.log'),
-            'formatter': 'verbose',
-        },
-        'prometheus': {
-            'level': 'INFO',
-            'class': 'core.customlogger.PrometheusLogHandler'
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'prometheus'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
