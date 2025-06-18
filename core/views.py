@@ -21,7 +21,7 @@ from django.core.paginator import Paginator
 from django.utils.timezone import now
 from prometheus_client import generate_latest
 
-from core.customlogger import database_size_gauge
+#from core.customlogger import database_size_gauge
 from .decorators import role_required
 from .models import (
     Employee, Department, PPEItem, PPERequest, PPEIssuance,
@@ -3075,26 +3075,25 @@ def risk_mitigation_update(request, pk):
     return render(request, 'risks/risk_mitigation_form.html', context)
 
 
-def metrics_view(request):
-    try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cur = conn.cursor()
-        cur.execute("SELECT pg_database_size(%s)", (settings.DATABASES['default']['NAME'],))
-        size = cur.fetchone()[0]
-        database_size_gauge.set(size)
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print(f"Error in metrics_view: {e}")
-
-    metrics = generate_latest()
-    return HttpResponse(metrics, content_type='text/plain')
+#def metrics_view(request):
+#    try:
+#        conn = psycopg2.connect(
+#            dbname=settings.DATABASES['default']['NAME'],
+#            user=settings.DATABASES['default']['USER'],
+#            password=settings.DATABASES['default']['PASSWORD'],
+#            host=settings.DATABASES['default']['HOST'],
+#            port=settings.DATABASES['default']['PORT']
+#        )
+#        cur = conn.cursor()
+#        cur.execute("SELECT pg_database_size(%s)", (settings.DATABASES['default']['NAME'],))
+#        size = cur.fetchone()[0]
+#        database_size_gauge.set(size)
+#        cur.close()
+#        conn.close()
+#    except Exception as e:
+#        print(f"Error in metrics_view: {e}")
+#    metrics = generate_latest()
+#    return HttpResponse(metrics, content_type='text/plain')
 @login_required
 def risk_mitigation_delete(request, pk):
     """Удаление мероприятия по снижению риска"""
