@@ -214,3 +214,61 @@ LOGGING = {
         },
     },
 }
+# Добавьте в конец settings.py
+
+# Автоматическая инициализация данных для продакшена
+if not DEBUG and 'migrate' not in sys.argv:
+    import os
+    import sys
+
+
+    def init_data():
+        """Инициализация базовых данных"""
+        from django.contrib.auth.models import User
+        from core.models import Department, Employee
+        from django.utils import timezone
+
+        try:
+            # Создаем отделы
+            dept_data = [
+                ('Администрация', 'Руководство компании'),
+                ('Отдел охраны труда', 'Специалисты по охране труда'),
+                ('Производственный цех №1', 'Основной производственный цех'),
+            ]
+
+            for dept_name, dept_desc in dept_data:
+                Department.objects.get_or_create(
+                    name=dept_name,
+                    defaults={'description': dept_desc}
+                )
+
+            # Создаем администратора
+            if not User.objects.filter(username='admin').exists():
+                admin_user = User.objects.create_superuser(
+                    username='admin',
+                    email='admin@orion.ru',
+                    password='123',
+                    first_name='Администратор',
+                    last_name='Системы'
+                )
+
+                admin_dept = Department.objects.get(name='Администрация')
+                Employee.objects.create(
+                    user=admin_user,
+                    department=admin_dept,
+                    position='Системный администратор',
+                    role='admin',
+                    hire_date=timezone.now().date()
+                )
+
+                print("Created admin user: admin / 123 / admin@orion.ru")
+
+        except Exception as e:
+            print(f"Error in auto init: {e}")
+
+
+    # Выполняем инициализацию
+    try:
+        init_data()
+    except:
+        pass  # Игнорируем ошибки при инициализации
