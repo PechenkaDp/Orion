@@ -3,6 +3,7 @@ Django's settings for OrionWorkSec project - Railway optimized
 """
 import os
 from pathlib import Path
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,9 +77,8 @@ WSGI_APPLICATION = 'OrionWorkSec.wsgi.application'
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    import dj_database_url
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
     DATABASES = {
@@ -176,3 +176,17 @@ LOGGING = {
         },
     },
 }
+if 'railway' in os.environ.get('RAILWAY_ENVIRONMENT_NAME', ''):
+    DEBUG = False
+
+    # Настройки безопасности для продакшена
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+
+    # Разрешенные хосты
+    ALLOWED_HOSTS = [
+        'web-production-74af8.up.railway.app',
+        '*.up.railway.app',
+        '*.railway.app'
+    ]
